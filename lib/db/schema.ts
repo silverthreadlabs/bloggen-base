@@ -1,0 +1,169 @@
+import type { InferSelectModel } from 'drizzle-orm';
+import {
+  boolean,
+  foreignKey,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+
+// Better Auth uses string IDs, not UUIDs
+export const user = pgTable('user', {
+  id: text('id').primaryKey().notNull(), // Better Auth uses string IDs
+  name: text('name').notNull(),
+  email: varchar('email', { length: 64 }).notNull().unique(),
+  emailVerified: boolean('emailVerified').notNull(),
+  image: text('image'),
+  createdAt: timestamp('createdAt').notNull(),
+  updatedAt: timestamp('updatedAt').notNull(),
+  twoFactorEnabled: boolean('twoFactorEnabled'),
+  role: text('role'),
+  banned: boolean('banned'),
+  banReason: text('banReason'),
+  banExpires: timestamp('banExpires'),
+  stripeCustomerId: text('stripeCustomerId'),
+  password: varchar('password', { length: 64 }),
+  isAnonymous: boolean('isAnonymous').notNull().default(false),
+});
+
+export type User = InferSelectModel<typeof user>;
+
+export const session = pgTable('session', {
+  id: text('id').primaryKey().notNull(),
+  expiresAt: timestamp('expiresAt').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('createdAt').notNull(),
+  updatedAt: timestamp('updatedAt').notNull(),
+  ipAddress: text('ipAddress'),
+  userAgent: text('userAgent'),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+  activeOrganizationId: text('activeOrganizationId'),
+  impersonatedBy: text('impersonatedBy'),
+});
+
+export type Session = InferSelectModel<typeof session>;
+
+export const account = pgTable('account', {
+  id: text('id').primaryKey().notNull(),
+  accountId: text('accountId').notNull(),
+  providerId: text('providerId').notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+  accessToken: text('accessToken'),
+  refreshToken: text('refreshToken'),
+  idToken: text('idToken'),
+  accessTokenExpiresAt: timestamp('accessTokenExpiresAt'),
+  refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('createdAt').notNull(),
+  updatedAt: timestamp('updatedAt').notNull(),
+});
+
+export type Account = InferSelectModel<typeof account>;
+
+export const verification = pgTable('verification', {
+  id: text('id').primaryKey().notNull(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expiresAt').notNull(),
+  createdAt: timestamp('createdAt'),
+  updatedAt: timestamp('updatedAt'),
+});
+
+export type Verification = InferSelectModel<typeof verification>;
+
+export const organization = pgTable('organization', {
+  id: text('id').primaryKey().notNull(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  logo: text('logo'),
+  createdAt: timestamp('createdAt').notNull(),
+  metadata: text('metadata'),
+});
+
+export type Organization = InferSelectModel<typeof organization>;
+
+export const member = pgTable('member', {
+  id: text('id').primaryKey().notNull(),
+  organizationId: text('organizationId')
+    .notNull()
+    .references(() => organization.id),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+  role: text('role').notNull(),
+  createdAt: timestamp('createdAt').notNull(),
+});
+
+export type Member = InferSelectModel<typeof member>;
+
+export const invitation = pgTable('invitation', {
+  id: text('id').primaryKey().notNull(),
+  organizationId: text('organizationId')
+    .notNull()
+    .references(() => organization.id),
+  email: text('email').notNull(),
+  role: text('role'),
+  status: text('status').notNull(),
+  expiresAt: timestamp('expiresAt').notNull(),
+  inviterId: text('inviterId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+});
+
+export type Invitation = InferSelectModel<typeof invitation>;
+
+export const twoFactor = pgTable('twoFactor', {
+  id: text('id').primaryKey().notNull(),
+  secret: text('secret').notNull(),
+  backupCodes: text('backupCodes').notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+});
+
+export type TwoFactor = InferSelectModel<typeof twoFactor>;
+
+export const passkey = pgTable('passkey', {
+  id: text('id').primaryKey().notNull(),
+  name: text('name'),
+  publicKey: text('publicKey').notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id), // Better Auth uses string IDs
+  credentialID: text('credentialID').notNull(),
+  counter: integer('counter').notNull(),
+  deviceType: text('deviceType').notNull(),
+  backedUp: boolean('backedUp').notNull(),
+  transports: text('transports'),
+  createdAt: timestamp('createdAt'),
+});
+
+export type Passkey = InferSelectModel<typeof passkey>;
+
+export const subscription = pgTable('subscription', {
+  id: text('id').primaryKey().notNull(),
+  plan: text('plan').notNull(),
+  referenceId: text('referenceId').notNull(),
+  stripeCustomerId: text('stripeCustomerId'),
+  stripeSubscriptionId: text('stripeSubscriptionId'),
+  status: text('status').notNull(),
+  periodStart: timestamp('periodStart'),
+  periodEnd: timestamp('periodEnd'),
+  cancelAtPeriodEnd: boolean('cancelAtPeriodEnd'),
+  seats: integer('seats'),
+  trialStart: timestamp('trialStart'),
+  trialEnd: timestamp('trialEnd'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Subscription = InferSelectModel<typeof subscription>;
