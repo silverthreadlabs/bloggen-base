@@ -1,11 +1,22 @@
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth/auth';
+import type { BetterAuthSession } from '@/lib/auth/auth-types';
+import { ChatLayoutClient } from '@/components/chat/chat-layout-client';
 
 import '../../global.css';
 
-export default function ChatLayout({ children }: { children: ReactNode }) {
-    return (
-        <div className='bg-canvas-bg flex h-screen w-full flex-col justify-center items-center overflow-hidden'>
-            <div className='w-full max-w-5xl h-full'>{children}</div>
-        </div>
-    );
+export default async function ChatLayout({ children }: { children: ReactNode }) {
+    const session = await auth.api
+        .getSession({ headers: await headers() })
+        .catch(() => null);
+
+    const sessionData = session as unknown as BetterAuthSession;
+
+    if (!sessionData || sessionData?.user?.isAnonymous) {
+        redirect('/sign-in');
+    }
+
+    return <ChatLayoutClient>{children}</ChatLayoutClient>;
 }
