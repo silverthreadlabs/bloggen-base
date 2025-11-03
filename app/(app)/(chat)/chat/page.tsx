@@ -11,9 +11,9 @@ export default async function ChatPage() {
 
   const sessionData = session as unknown as BetterAuthSession;
 
-  if (!sessionData || sessionData?.user?.isAnonymous) {
-    redirect('/sign-in');
-  }
+  // if (!sessionData || sessionData?.user?.isAnonymous) {
+  //   redirect('/sign-in');
+  // }
 
   return <ChatClient session={JSON.parse(JSON.stringify(session))} />;
 }
