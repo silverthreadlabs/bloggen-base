@@ -11,7 +11,7 @@ export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
     name: 'Anonymous',
   },
   registered: {
-    limit: 10,
+    limit: 9000,
     window: 86400, // 24 hours in seconds (1 day)
     name: 'Registered',
   },

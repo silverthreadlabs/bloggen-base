@@ -342,8 +342,8 @@
 }
 
 @layer components {
-        @import 'fumadocs-ui/style.css';
-    }
+    @import 'fumadocs-ui/style.css';
+}
 
 #nd-sidebar {
     @apply bg-canvas-bg;
