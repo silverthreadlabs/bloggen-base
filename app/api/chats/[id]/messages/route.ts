@@ -72,7 +72,7 @@ export async function POST(req: Request, context: RouteContext) {
       throw error;
     }
 
-    const { role, content, parts, attachments = [] } = body;
+    const { role, content, parts, attachments = [], id: customId } = body;
 
     if (!role || !content) {
       return NextResponse.json(
@@ -103,7 +103,8 @@ export async function POST(req: Request, context: RouteContext) {
       role,
       content,
       parts || [{ type: 'text', text: content }],
-      attachments
+      attachments,
+      customId // Pass custom ID if provided (for AI SDK message IDs)
     );
 
     return NextResponse.json({ message });

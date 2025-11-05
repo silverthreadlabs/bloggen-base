@@ -3,6 +3,7 @@ import {
   updateChatTitle,
   deleteChat,
   getMessagesByChatId,
+  dbMessagesToUIMessages,
 } from '@/lib/db/chat-queries';
 import {
   getAuthenticatedUserFromRequest,
@@ -23,7 +24,10 @@ export async function GET(req: Request, context: RouteContext) {
     const { id } = await parseRouteParams(context.params);
     
     const chat = await verifyChatOwnership(id, user.id);
-    const messages = await getMessagesByChatId(id);
+    const dbMessages = await getMessagesByChatId(id);
+    
+    // Convert DB messages to UIMessage format
+    const messages = dbMessagesToUIMessages(dbMessages);
 
     return NextResponse.json({ chat, messages });
   } catch (error) {

@@ -8,7 +8,9 @@ import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { ChatView } from './chat-view';
 import { useChatOperations } from './hooks/use-chat-operations';
 import { useMessageOperations } from './hooks/use-message-operations';
-import { useTogglePinChat, useChats, useChat as useChatQuery } from '@/lib/hooks/chat';
+import { useChats, useChat as useChatQuery } from '@/lib/hooks/chat';
+import { useToggleChatPin, useChatPinStore } from '@/lib/stores/chat-pin-store';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
 import { generateUUID } from '@/lib/utils';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
@@ -35,7 +37,11 @@ export function ChatInterface({ chatId, initialChat }: Props) {
   // Custom hooks for database operations
   const chatOps = useChatOperations(currentChatId || '');
   const messageOps = useMessageOperations(currentChatId || '');
-  const togglePinMutation = useTogglePinChat();
+  const togglePin = useToggleChatPin();
+  const queryClient = useQueryClient();
+  const getPinStatus = useChatPinStore((state) => state.getPinStatus);
+  // Subscribe to optimistic pins for reactivity
+  useChatPinStore((state) => state.optimisticPins);
 
   // AI SDK Chat Hook - uses id to construct API URL with chatId
   const {
@@ -48,7 +54,29 @@ export function ChatInterface({ chatId, initialChat }: Props) {
   } = useChat({
     id: currentChatId,
     generateId: generateUUID,
-    onFinish: async () => {
+    onFinish: async (result) => {
+      // Save assistant message to database after streaming completes
+      if (currentChatId && result?.message && result.message.role === 'assistant') {
+        try {
+          const message = result.message;
+          const content = message.parts
+            ?.filter((part: any) => part.type === 'text')
+            .map((part: any) => part.text)
+            .join('') || '';
+          
+          if (content.trim()) {
+            // Save assistant message with the AI SDK's message ID
+            await messageOps.saveMessage({
+              role: 'assistant',
+              content,
+              parts: message.parts || [],
+            }, message.id);
+          }
+        } catch (error) {
+          console.error('Error saving assistant message:', error);
+        }
+      }
+
       // Invalidate React Query cache after streaming completes to sync with DB
       if (currentChatId) {
         // Update chat title if it's still "New Chat" and we have messages
@@ -91,14 +119,13 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       chatToUse?.messages &&
       chatToUse.messages.length > 0 &&
       currentChatId === chatToUse.id &&
-      messages.length === 0 &&
       !hasInitializedMessages.current
     ) {
       console.log('Setting initial messages from DB:', chatToUse.messages.length);
       setMessages(chatToUse.messages);
       hasInitializedMessages.current = true;
     }
-  }, [initialChat, chatData, currentChatId, messages.length, setMessages]);
+  }, [initialChat, chatData, currentChatId, setMessages]);
 
   // Sync currentChatId with chatId prop when it changes
   useEffect(() => {
@@ -106,8 +133,8 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       setCurrentChatId(chatId);
       hasInitializedMessages.current = false;
       
-      // Only clear messages when switching to a different chat
-      if (chatId && messages.length > 0) {
+      // Clear messages when switching to a different chat (not on initial mount)
+      if (chatId && currentChatId && chatId !== currentChatId && messages.length > 0) {
         setMessages([]);
       }
     }
@@ -384,10 +411,10 @@ export function ChatInterface({ chatId, initialChat }: Props) {
     }
   }, [currentChatId, chatOps]);
 
-  const handlePinChat = useCallback((pinned: boolean) => {
+  const handlePinChat = useCallback(async (pinned: boolean) => {
     if (!currentChatId) return;
-    togglePinMutation.mutate({ chatId: currentChatId, pinned });
-  }, [currentChatId, togglePinMutation]);
+    await togglePin(currentChatId, pinned);
+  }, [currentChatId, togglePin]);
 
   const handleStop = useCallback(() => {
     stop();
@@ -410,7 +437,7 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       setUseMicrophone={setUseMicrophone}
       chatTitle={initialChat?.title || (currentChatId ? undefined : 'New Chat')}
       chatId={currentChatId}
-      pinned={initialChat?.pinned || false}
+      pinned={currentChatId ? getPinStatus(currentChatId, queryClient) : false}
       onSubmit={handleSubmit}
       onSuggestionClick={handleSuggestionClick}
       onDelete={handleDelete}

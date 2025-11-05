@@ -20,7 +20,9 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useChats, useCreateChat, useDeleteChat, useUpdateChatTitle, useTogglePinChat } from '@/lib/hooks/chat';
+import { useQueryClient } from '@tanstack/react-query';
+import { useChats, useCreateChat, useDeleteChat, useUpdateChatTitle } from '@/lib/hooks/chat';
+import { useToggleChatPin, useChatPinStore } from '@/lib/stores/chat-pin-store';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -59,13 +61,19 @@ export function ChatSidebar({ currentChatId }: Props) {
   const createChatMutation = useCreateChat();
   const deleteChatMutation = useDeleteChat();
   const updateTitleMutation = useUpdateChatTitle();
-  const togglePinMutation = useTogglePinChat();
+  const togglePin = useToggleChatPin();
   const { toggleSidebar, state } = useSidebar();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+
+  // Get optimistic pins and methods from Zustand store for reactivity
+  // Subscribing to optimisticPins ensures re-renders when pin status changes
+  const optimisticPins = useChatPinStore((state) => state.optimisticPins);
+  const getPinStatus = useChatPinStore((state) => state.getPinStatus);
+  const queryClient = useQueryClient();
 
   // Group chats by month and separate pinned
   const { pinnedChats, groupedChats } = useMemo(() => {
@@ -76,8 +84,21 @@ export function ChatSidebar({ currentChatId }: Props) {
       return chat.title.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    const pinned = filtered.filter((chat) => chat.pinned);
-    const unpinned = filtered.filter((chat) => !chat.pinned);
+    // Use Zustand store for pin status (optimistic)
+    const pinned = filtered.filter((chat) => {
+      // Check optimistic state first, then fallback to chat.pinned
+      if (chat.id in optimisticPins) {
+        return optimisticPins[chat.id];
+      }
+      return chat.pinned;
+    });
+    const unpinned = filtered.filter((chat) => {
+      // Check optimistic state first, then fallback to chat.pinned
+      if (chat.id in optimisticPins) {
+        return !optimisticPins[chat.id];
+      }
+      return !chat.pinned;
+    });
 
     // Group by month
     const grouped: Record<string, typeof unpinned> = {};
@@ -91,7 +112,7 @@ export function ChatSidebar({ currentChatId }: Props) {
     });
 
     return { pinnedChats: pinned, groupedChats: grouped };
-  }, [chats, searchQuery]);
+  }, [chats, searchQuery, optimisticPins]);
 
   const handleNewChat = useCallback(() => {
     // Navigate to /chat without creating a chat immediately
@@ -136,9 +157,9 @@ export function ChatSidebar({ currentChatId }: Props) {
     });
   }, [deleteChatMutation, currentChatId, router, chats]);
 
-  const handlePinChat = useCallback((chatId: string, pinned: boolean) => {
-    togglePinMutation.mutate({ chatId, pinned });
-  }, [togglePinMutation]);
+  const handlePinChat = useCallback(async (chatId: string, pinned: boolean) => {
+    await togglePin(chatId, pinned);
+  }, [togglePin]);
 
   const startEditing = useCallback((chatId: string, title: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -231,11 +252,17 @@ export function ChatSidebar({ currentChatId }: Props) {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  handlePinChat(chat.id, !chat.pinned);
+                  const currentPinned = getPinStatus(chat.id, queryClient);
+                  handlePinChat(chat.id, !currentPinned);
                 }}
               >
                 <Pin className="h-4 w-4 mr-2" />
-                {chat.pinned ? 'Unpin' : 'Pin'}
+                {(() => {
+                  const isPinned = chat.id in optimisticPins
+                    ? optimisticPins[chat.id]
+                    : chat.pinned;
+                  return isPinned ? 'Unpin' : 'Pin';
+                })()}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => startEditing(chat.id, chat.title, e)}

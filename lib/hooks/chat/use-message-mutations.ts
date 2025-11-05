@@ -16,10 +16,12 @@ export function useSaveMessage() {
     mutationFn: ({
       chatId,
       message,
+      customId,
     }: {
       chatId: string;
       message: CreateMessagePayload;
-    }) => saveMessage(chatId, message),
+      customId?: string;
+    }) => saveMessage(chatId, message, customId),
     onSuccess: (_, { chatId }) => {
       // Invalidate both chat detail and list to update message counts and timestamps
       queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });

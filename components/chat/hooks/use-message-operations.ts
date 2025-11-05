@@ -19,13 +19,13 @@ export function useMessageOperations(chatId: string) {
 
   // Use mutateAsync for save since we might need to wait for the result
   const saveMessage = useCallback(async (
-    role: 'user' | 'assistant' | 'system',
-    content: string,
-    parts: any[]
+    message: { role: 'user' | 'assistant' | 'system'; content: string; parts: any[] },
+    customId?: string
   ) => {
     return await saveMessageMutation.mutateAsync({
       chatId,
-      message: { role, content, parts },
+      message,
+      customId,
     });
   }, [chatId, saveMessageMutation]);
 

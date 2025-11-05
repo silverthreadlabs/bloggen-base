@@ -125,12 +125,12 @@ export function MessageList({
                       >
                         <PencilIcon className="size-3" />
                       </Action>
-                      <Action
+                      {/* <Action
                         tooltip="Delete"
                         onClick={() => onDelete(message.id)}
                       >
                         <Trash2Icon className="size-3" />
-                      </Action>
+                      </Action> */}
                     </>
                   )}
                 </Actions>
