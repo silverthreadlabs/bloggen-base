@@ -5,7 +5,7 @@ import { ChatInterface } from './chat-interface';
 import { useChat } from '@/lib/hooks/chat';
 
 type Props = {
-  chatId?: string;
+  chatId: string; // Now required - always generated server-side
 };
 
 // Create a client outside component to avoid recreation on each render
@@ -20,18 +20,9 @@ const queryClient = new QueryClient({
 });
 
 function ChatContainerInner({ chatId }: Props) {
-  // Fetch existing chat if chatId is provided
-  const { data: existingChat, isLoading: isChatLoading } = useChat(chatId);
-
-  // Only show loading state if we have a chatId, it's loading, AND we don't have cached data
-  // This allows newly created chats (with optimistic data) to render immediately
-  if (chatId && isChatLoading && !existingChat) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-muted-foreground">Loading chat...</div>
-      </div>
-    );
-  }
+  // Fetch existing chat if chatId is provided - but don't block on loading
+  // This allows new chats with server-generated IDs to render immediately
+  const { data: existingChat } = useChat(chatId);
 
   return (
     <ChatInterface 

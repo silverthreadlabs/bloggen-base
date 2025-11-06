@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
-import { saveMessage, messageExistsById } from '@/lib/db/chat-queries';
+import { saveMessage, messageExistsById, createChat, getChatById } from '@/lib/db/chat-queries';
 import { getAuthenticatedUserFromRequest, handleApiError } from '@/lib/api/utils';
 
 // Allow streaming responses up to 30 seconds
@@ -46,6 +46,35 @@ export async function POST(req: Request) {
     // If not in query, check body.id (from useChat id parameter)
     if (!chatId && id) {
       chatId = id;
+    }
+
+    // Vercel pattern: Check if chat exists, if not create it (auto-create on first message)
+    if (chatId) {
+      const existingChat = await getChatById(chatId);
+      
+      if (!existingChat) {
+        // Chat doesn't exist yet - create it now (seamless new chat pattern)
+        console.log('[API] Creating new chat with ID:', chatId);
+        
+        // Generate title from first user message (similar to Vercel)
+        const firstUserMessage = messages.find(m => m.role === 'user');
+        let title = 'New Chat';
+        
+        if (firstUserMessage) {
+          const textContent = firstUserMessage.parts
+            ?.filter((part: any) => part.type === 'text')
+            .map((part: any) => part.text)
+            .join('') || '';
+          
+          // Use first 50 chars as title
+          if (textContent.trim()) {
+            title = textContent.slice(0, 50).trim();
+          }
+        }
+        
+        // Create chat with generated ID (server-generated from /chat page)
+        await createChat(user.id, title, chatId);
+      }
     }
 
     // If chatId is provided, save the user message asynchronously (don't wait)

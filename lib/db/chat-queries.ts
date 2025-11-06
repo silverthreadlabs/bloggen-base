@@ -17,14 +17,21 @@ const db = drizzle(client);
 // CHAT OPERATIONS
 // ============================================================================
 
-export async function createChat(userId: string, title: string) {
+export async function createChat(userId: string, title: string, chatId?: string) {
+  const values: any = {
+    userId,
+    title,
+    visibility: 'private',
+  };
+  
+  // If custom chatId provided (from server-side generation), use it
+  if (chatId) {
+    values.id = chatId;
+  }
+  
   const [newChat] = await db
     .insert(chat)
-    .values({
-      userId,
-      title,
-      visibility: 'private',
-    })
+    .values(values)
     .returning();
 
   return newChat;
