@@ -7,4 +7,5 @@ export {
 	deleteTrailingMessages,
 	verifyChatAccess,
 	getAuthenticatedUser,
+	togglePinChat,
 } from './chat-actions';

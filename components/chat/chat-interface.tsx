@@ -8,9 +8,8 @@ import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { ChatView } from './chat-view';
 import { useChatOperations } from './hooks/use-chat-operations';
 import { useMessageOperations } from './hooks/use-message-operations';
-import { useChats, useChat as useChatQuery } from '@/lib/hooks/chat';
-import { useToggleChatPin, useChatPinStore } from '@/lib/stores/chat-pin-store';
-import { useQueryClient } from '@tanstack/react-query';
+import { useChats, useChat as useChatQuery, useCreateChat } from '@/lib/hooks/chat';
+import { useToggleChatPin, useChatPinStatus } from '@/lib/stores/chat-pin-store';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
 import { generateUUID } from '@/lib/utils';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
@@ -27,8 +26,8 @@ export function ChatInterface({ chatId, initialChat }: Props) {
   const [useMicrophone, setUseMicrophone] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(chatId);
   const hasInitializedMessages = useRef(false);
+  const sendMessageRef = useRef<((message: { text: string }) => void) | null>(null);
   const pendingMessageRef = useRef<{ text: string; chatId: string } | null>(null);
-  const isCreatingChatRef = useRef(false);
 
   // React Query hooks for data fetching
   const { data: allChats } = useChats(); // Get all chats for navigation after delete
@@ -38,10 +37,11 @@ export function ChatInterface({ chatId, initialChat }: Props) {
   const chatOps = useChatOperations(currentChatId || '');
   const messageOps = useMessageOperations(currentChatId || '');
   const togglePin = useToggleChatPin();
-  const queryClient = useQueryClient();
-  const getPinStatus = useChatPinStore((state) => state.getPinStatus);
-  // Subscribe to optimistic pins for reactivity
-  useChatPinStore((state) => state.optimisticPins);
+  // Use reactive hook for pin status that subscribes to optimistic updates
+  const pinned = useChatPinStatus(currentChatId);
+  
+  // Chat creation mutation with callback support
+  const createChatMutation = useCreateChat();
 
   // AI SDK Chat Hook - uses id to construct API URL with chatId
   const {
@@ -112,20 +112,8 @@ export function ChatInterface({ chatId, initialChat }: Props) {
     },
   });
 
-  // Set initial messages when initialChat or React Query data is loaded
-  useEffect(() => {
-    const chatToUse = initialChat || chatData;
-    if (
-      chatToUse?.messages &&
-      chatToUse.messages.length > 0 &&
-      currentChatId === chatToUse.id &&
-      !hasInitializedMessages.current
-    ) {
-      console.log('Setting initial messages from DB:', chatToUse.messages.length);
-      setMessages(chatToUse.messages);
-      hasInitializedMessages.current = true;
-    }
-  }, [initialChat, chatData, currentChatId, setMessages]);
+  // Store sendMessage in ref for use in mutation callbacks
+  sendMessageRef.current = sendMessage;
 
   // Sync currentChatId with chatId prop when it changes
   useEffect(() => {
@@ -140,17 +128,31 @@ export function ChatInterface({ chatId, initialChat }: Props) {
     }
   }, [chatId, currentChatId, setMessages, messages.length]);
 
-  // Reset initialization flag when chat changes
+  // Set initial messages when React Query data is loaded (using TanStack Query data directly)
   useEffect(() => {
-    if (currentChatId !== initialChat?.id && currentChatId !== chatData?.id) {
+    const chatToUse = initialChat || chatData;
+    if (
+      chatToUse?.messages &&
+      chatToUse.messages.length > 0 &&
+      currentChatId === chatToUse.id &&
+      !hasInitializedMessages.current
+    ) {
+      console.log('Setting initial messages from DB:', chatToUse.messages.length);
+      setMessages(chatToUse.messages);
+      hasInitializedMessages.current = true;
+    }
+    
+    // Reset initialization flag when chat changes
+    if (currentChatId && currentChatId !== chatToUse?.id) {
       hasInitializedMessages.current = false;
     }
-  }, [currentChatId, initialChat?.id, chatData?.id]);
+  }, [initialChat, chatData, currentChatId, setMessages]);
   
   const isLoading = status === 'submitted' || status === 'streaming';
 
-  // Send pending message once chatId is set and hook is ready
-  useEffect(() => {
+  // Send pending message when sendMessage becomes available and status is ready
+  // This runs when sendMessage changes (after useChat reinitializes with new chatId)
+  const trySendPendingMessage = useCallback(() => {
     if (
       pendingMessageRef.current &&
       currentChatId &&
@@ -164,7 +166,6 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       
       // Clear the pending message immediately
       pendingMessageRef.current = null;
-      isCreatingChatRef.current = false;
       
       // Send the message
       try {
@@ -176,7 +177,12 @@ export function ChatInterface({ chatId, initialChat }: Props) {
         pendingMessageRef.current = message;
       }
     }
-  }, [currentChatId, sendMessage, isLoading, status]);
+  }, [currentChatId, isLoading, status, sendMessage]);
+
+  // This triggers when sendMessage changes (useChat reinitializes with new chatId)
+  useEffect(() => {
+    trySendPendingMessage();
+  }, [sendMessage, status, currentChatId, trySendPendingMessage]);
 
   // ============================================================================
   // Message Handlers
@@ -201,38 +207,39 @@ export function ChatInterface({ chatId, initialChat }: Props) {
     }
 
     // Prevent multiple submissions while creating chat or sending message
-    if (isLoading || isCreatingChatRef.current) {
+    if (isLoading || createChatMutation.isPending) {
       return;
     }
 
     try {
       // Step 1: Create chat if this is the first message
       if (!currentChatId) {
-        isCreatingChatRef.current = true;
-        try {
-          console.log('[ChatInterface] Creating new chat before sending message:', message.text);
-          
-          // Create chat using React Query mutation
-          const newChat = await chatOps.createNewChat();
-          const newChatId = newChat.id;
-          console.log('[ChatInterface] New chat created with ID:', newChatId);
-          
-          // Store message to send with the new chatId
-          pendingMessageRef.current = { text: message.text, chatId: newChatId };
-          
-          // Update state and URL
-          setCurrentChatId(newChatId);
-          router.replace(`/chat/${newChatId}`);
-          setText('');
-          
-          console.log('[ChatInterface] Set pending message and updated chatId to:', newChatId);
-          // The useEffect hook will handle sending the message once the chatId is set and useChat is ready
-        } catch (createError) {
-          console.error('Error creating chat:', createError);
-          toast.error('Failed to create chat');
-          isCreatingChatRef.current = false;
-          pendingMessageRef.current = null;
-        }
+        console.log('[ChatInterface] Creating new chat before sending message:', message.text);
+        
+        // Store message to send after chat is created
+        const messageText = message.text;
+        
+        // Create chat using TanStack Query mutation with onSuccess callback
+        createChatMutation.mutate('New Chat', {
+          onSuccess: (newChat) => {
+            const newChatId = newChat.id;
+            console.log('[ChatInterface] New chat created with ID:', newChatId);
+            
+            // Update state and URL - chat will display immediately due to optimistic cache
+            setCurrentChatId(newChatId);
+            router.replace(`/chat/${newChatId}`);
+            
+            // Store pending message - will be sent once useChat is ready
+            // sendMessage will add the user message and start streaming immediately
+            pendingMessageRef.current = { text: messageText, chatId: newChatId };
+          },
+          onError: (error) => {
+            console.error('Error creating chat:', error);
+            toast.error('Failed to create chat');
+          },
+        });
+        
+        setText('');
         return;
       }
 
@@ -244,43 +251,39 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       console.error('Error in message flow:', error);
       toast.error('Failed to send message');
       pendingMessageRef.current = null;
-      isCreatingChatRef.current = false;
     }
-  }, [currentChatId, chatOps, router, sendMessage, isLoading]);
+  }, [currentChatId, createChatMutation, router, sendMessage, isLoading, trySendPendingMessage]);
 
   const handleSuggestionClick = useCallback(async (suggestion: string) => {
     // Prevent multiple submissions while creating chat or sending message
-    if (isLoading || isCreatingChatRef.current) {
+    if (isLoading || createChatMutation.isPending) {
       return;
     }
 
     try {
       // Create chat if no chat exists yet
       if (!currentChatId) {
-        isCreatingChatRef.current = true;
-        try {
-          console.log('[ChatInterface] Creating new chat before sending suggestion:', suggestion);
-          
-          // Create chat using React Query mutation
-          const newChat = await chatOps.createNewChat();
-          const newChatId = newChat.id;
-          console.log('[ChatInterface] New chat created with ID:', newChatId);
-          
-          // Store message to send with the new chatId
-          pendingMessageRef.current = { text: suggestion, chatId: newChatId };
-          
-          // Update state and URL
-          setCurrentChatId(newChatId);
-          router.replace(`/chat/${newChatId}`);
-          
-          console.log('[ChatInterface] Set pending message and updated chatId to:', newChatId);
-          // The useEffect hook will handle sending the message once the chatId is set and useChat is ready
-        } catch (createError) {
-          console.error('Error creating chat:', createError);
-          toast.error('Failed to create chat');
-          isCreatingChatRef.current = false;
-          pendingMessageRef.current = null;
-        }
+        console.log('[ChatInterface] Creating new chat before sending suggestion:', suggestion);
+        
+        // Create chat using TanStack Query mutation with onSuccess callback
+        createChatMutation.mutate('New Chat', {
+          onSuccess: (newChat) => {
+            const newChatId = newChat.id;
+            console.log('[ChatInterface] New chat created with ID:', newChatId);
+            
+            // Update state and URL - chat will display immediately due to optimistic cache
+            setCurrentChatId(newChatId);
+            router.replace(`/chat/${newChatId}`);
+            
+            // Store pending message - will be sent once useChat is ready
+            // sendMessage will add the user message and start streaming immediately
+            pendingMessageRef.current = { text: suggestion, chatId: newChatId };
+          },
+          onError: (error) => {
+            console.error('Error creating chat:', error);
+            toast.error('Failed to create chat');
+          },
+        });
         return;
       }
 
@@ -290,9 +293,8 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       console.error('Error in suggestion flow:', error);
       toast.error('Failed to send message');
       pendingMessageRef.current = null;
-      isCreatingChatRef.current = false;
     }
-  }, [currentChatId, chatOps, router, sendMessage, isLoading]);
+  }, [currentChatId, createChatMutation, router, sendMessage, isLoading, trySendPendingMessage]);
 
   const handleDelete = useCallback((messageId: string) => {
     if (!currentChatId) return;
@@ -437,7 +439,7 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       setUseMicrophone={setUseMicrophone}
       chatTitle={initialChat?.title || (currentChatId ? undefined : 'New Chat')}
       chatId={currentChatId}
-      pinned={currentChatId ? getPinStatus(currentChatId, queryClient) : false}
+      pinned={pinned}
       onSubmit={handleSubmit}
       onSuggestionClick={handleSuggestionClick}
       onDelete={handleDelete}

@@ -23,9 +23,9 @@ function ChatContainerInner({ chatId }: Props) {
   // Fetch existing chat if chatId is provided
   const { data: existingChat, isLoading: isChatLoading } = useChat(chatId);
 
-  // Only show loading state for existing chats (not new chats)
-  // New chats (undefined chatId) should render immediately for smooth transition
-  if (chatId && isChatLoading) {
+  // Only show loading state if we have a chatId, it's loading, AND we don't have cached data
+  // This allows newly created chats (with optimistic data) to render immediately
+  if (chatId && isChatLoading && !existingChat) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-muted-foreground">Loading chat...</div>

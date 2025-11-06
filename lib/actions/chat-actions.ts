@@ -6,6 +6,7 @@ import {
 	deleteMessagesAfter,
 	getChatById,
 	getMessage,
+	togglePinChat as togglePinChatQuery,
 } from "@/lib/db/chat-queries";
 import { ChatSDKError } from "@/lib/errors";
 
@@ -90,4 +91,38 @@ export async function getAuthenticatedUser() {
 	}
 
 	return session.user;
+}
+
+/**
+ * Server action to toggle pin status of a chat
+ * Directly calls database query for atomic update (no API round trip)
+ * @param chatId - The chat ID to toggle pin status
+ * @param pinned - The new pin status (true/false)
+ * @returns The updated chat object
+ */
+export async function togglePinChat(chatId: string, pinned: boolean) {
+	try {
+		const user = await getAuthenticatedUser();
+		
+		// Verify the user owns this chat
+		await verifyChatAccess(chatId, user.id);
+		
+		// Atomic database update
+		const updated = await togglePinChatQuery(chatId, pinned);
+		
+		return {
+			...updated,
+			createdAt: updated.createdAt instanceof Date ? updated.createdAt : new Date(updated.createdAt),
+			updatedAt: updated.updatedAt instanceof Date ? updated.updatedAt : new Date(updated.updatedAt),
+		};
+	} catch (error) {
+		if (error instanceof ChatSDKError) {
+			throw error;
+		}
+		console.error("Error in togglePinChat:", error);
+		throw new ChatSDKError(
+			"bad_request:database",
+			"Failed to toggle pin status",
+		);
+	}
 }

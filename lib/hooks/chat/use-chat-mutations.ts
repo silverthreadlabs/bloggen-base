@@ -15,9 +15,17 @@ export function useCreateChat() {
   return useMutation({
     mutationFn: createChat,
     onSuccess: (newChat) => {
+      // Optimistically update chat list
       queryClient.setQueryData<Chat[]>(chatKeys.list(), (old) => {
         if (!old) return [newChat];
         return [newChat, ...old];
+      });
+      
+      // Optimistically set chat detail query data with empty messages
+      // This prevents "Loading chat..." from showing when navigating to the new chat
+      queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(newChat.id), {
+        ...newChat,
+        messages: [],
       });
     },
     onError: () => {

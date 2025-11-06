@@ -26,7 +26,9 @@ export function ChatHeader({
   onPinChat,
   onUpdateTitle 
 }: ChatHeaderProps) {
-  const isNewChat = !chatId || title === 'New Chat';
+  // If chatId exists, it's not a new chat (regardless of title)
+  // Title might be "New Chat" temporarily even after chat is created
+  const isNewChat = !chatId;
   
   const handleShare = () => {
     if (chatId && navigator.share) {

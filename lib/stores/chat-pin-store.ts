@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
-import { togglePinChat } from '@/lib/hooks/chat/api';
+import { togglePinChat } from '@/lib/actions/chat-actions';
 import type { Chat, ChatWithMessages } from '@/lib/hooks/chat/types';
 import { toast } from 'sonner';
 
@@ -64,7 +64,7 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
     });
 
     try {
-      // Make API call
+      // Call server action directly (no API round trip - faster!)
       await togglePinChat(chatId, pinned);
 
       // Remove from optimistic state after success
