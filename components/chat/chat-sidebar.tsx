@@ -290,7 +290,7 @@ export function ChatSidebar({ currentChatId }: Props) {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar collapsible="icon" className="border-r max-w-72">
       <SidebarHeader className="p-2">
         {/* Logo/Brand - Show only icon when collapsed */}
         <div className="flex items-center justify-center mb-2">

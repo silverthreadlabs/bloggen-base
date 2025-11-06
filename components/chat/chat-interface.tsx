@@ -109,14 +109,61 @@ export function ChatInterface({ chatId, initialChat }: Props) {
     setMessages(messages.filter((m) => m.id !== messageId));
   }, [messageOps, messages, setMessages]);
 
-  const handleEdit = useCallback((messageId: string, newContent: string) => {
+  const handleEdit = useCallback(async (messageId: string, newContent: string) => {
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    const editedMessage = messages[messageIndex];
+    if (editedMessage.role !== 'user') return;
+
+    // Update the message in the database
     messageOps.updateMessage(messageId, newContent);
-    setMessages(messages.map((m) => 
+    
+    // Update local messages state with properly typed parts
+    const updatedMessages = messages.map((m) => 
       m.id === messageId 
-        ? { ...m, content: newContent, parts: [{ type: 'text', text: newContent }] } 
+        ? { ...m, content: newContent, parts: [{ type: 'text' as const, text: newContent }] } 
         : m
-    ));
-  }, [messageOps, messages, setMessages]);
+    );
+
+    // Find the next assistant message after the edited user message
+    const nextAssistantIndex = updatedMessages.findIndex(
+      (m, idx) => idx > messageIndex && m.role === 'assistant'
+    );
+
+    // If there's an assistant message after the edited user message, regenerate it
+    if (nextAssistantIndex !== -1) {
+      const assistantMessageId = updatedMessages[nextAssistantIndex].id;
+      
+      try {
+        // Delete trailing messages (the assistant message and any after it)
+        messageOps.regenerateMessage(assistantMessageId, () => 
+          deleteTrailingMessages({ id: assistantMessageId })
+        );
+
+        // Create the messages array up to and including the edited message
+        const messagesUpToEdit = [
+          ...messages.slice(0, messageIndex),
+          { ...messages[messageIndex], content: newContent, parts: [{ type: 'text' as const, text: newContent }] }
+        ];
+        
+        // Remove the assistant message and all messages after it from local state
+        setMessages(messagesUpToEdit);
+        
+        // Regenerate the response with the updated user message
+        aiRegenerate();
+        toast.success('Regenerating response with edited message...');
+      } catch (error) {
+        console.error('Error regenerating after edit:', error);
+        toast.error('Failed to regenerate response');
+        // Still update the messages even if regeneration fails
+        setMessages(updatedMessages);
+      }
+    } else {
+      // No assistant message to regenerate, just update the message
+      setMessages(updatedMessages);
+    }
+  }, [messageOps, messages, setMessages, aiRegenerate]);
 
   const handleRegenerate = useCallback(async (messageId: string) => {
     const messageIndex = messages.findIndex(m => m.id === messageId);
@@ -180,6 +227,7 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       useMicrophone={useMicrophone}
       setUseMicrophone={setUseMicrophone}
       pinned={pinned}
+      chatTitle={chatData?.title}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       onEdit={handleEdit}

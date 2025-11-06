@@ -73,8 +73,8 @@ export function ChatView({
         chatId={chatId}
         pinned={pinned}
         onNewChatAction={onNewChat}
-        onDeleteChat={chatTitle && chatTitle !== 'New Chat' ? onDeleteChat : undefined}
-        onUpdateTitle={chatTitle && chatTitle !== 'New Chat' ? onUpdateTitle : undefined}
+        onDeleteChat={chatTitle ? onDeleteChat : undefined}
+        onUpdateTitle={chatTitle ? onUpdateTitle : undefined}
         onPinChat={onPinChat}
       />
 

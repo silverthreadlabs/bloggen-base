@@ -18,7 +18,7 @@ type ChatHeaderProps = {
 };
 
 export function ChatHeader({ 
-  title = 'AI Assistant', 
+  title = 'New Chat', 
   chatId,
   pinned = false,
   onNewChatAction,
@@ -48,7 +48,7 @@ export function ChatHeader({
   return (
     <div className="flex items-center justify-between border-b border-sidebar-border bg-sidebar px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
-        {/* Empty space for logo if needed */}
+        <h1 className="text-lg font-bold">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2">
