@@ -69,7 +69,8 @@ export function useMessageOperations(chatId: string) {
   const invalidateChat = useCallback(() => {
     if (chatId) {
       queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
-      queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+      // Don't invalidate list here - it's only needed when creating a new chat
+      // which is handled explicitly in chat-interface.tsx
     }
   }, [chatId, queryClient]);
 
