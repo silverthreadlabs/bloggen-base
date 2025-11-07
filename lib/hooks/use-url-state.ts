@@ -1,9 +1,9 @@
 /**
  * URL State Management Hooks using nuqs
- * 
+ *
  * Basic setup for URL state management with scalability in mind.
  * Provides type-safe hooks for managing state in URL search params.
- * 
+ *
  * @example
  * ```tsx
  * // In a client component
@@ -12,7 +12,14 @@
  * ```
  */
 
-import { parseAsInteger, parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import {
+  parseAsInteger,
+  parseAsString,
+  useQueryState,
+  useQueryStates,
+} from 'nuqs';
+import { DEFAULT_LENGTH, DEFAULT_TONE } from '@/lib/config/message-modifiers';
+import { parseAsLiteral } from '@/lib/utils/url-parsers';
 
 /**
  * Search query parameter
@@ -21,7 +28,7 @@ import { parseAsInteger, parseAsString, useQueryState, useQueryStates } from 'nu
 export function useSearchParam(defaultValue = '') {
   return useQueryState(
     'search',
-    parseAsString.withDefault(defaultValue).withOptions({ shallow: true })
+    parseAsString.withDefault(defaultValue).withOptions({ shallow: true }),
   );
 }
 
@@ -32,7 +39,7 @@ export function useSearchParam(defaultValue = '') {
 export function usePageParam(defaultValue = 1) {
   return useQueryState(
     'page',
-    parseAsInteger.withDefault(defaultValue).withOptions({ shallow: true })
+    parseAsInteger.withDefault(defaultValue).withOptions({ shallow: true }),
   );
 }
 
@@ -43,7 +50,7 @@ export function usePageParam(defaultValue = 1) {
 export function useSortParam(defaultValue = '') {
   return useQueryState(
     'sort',
-    parseAsString.withDefault(defaultValue).withOptions({ shallow: true })
+    parseAsString.withDefault(defaultValue).withOptions({ shallow: true }),
   );
 }
 
@@ -54,7 +61,7 @@ export function useSortParam(defaultValue = '') {
 export function useOrderParam(defaultValue: 'asc' | 'desc' = 'desc') {
   return useQueryState(
     'order',
-    parseAsString.withDefault(defaultValue).withOptions({ shallow: true })
+    parseAsString.withDefault(defaultValue).withOptions({ shallow: true }),
   );
 }
 
@@ -65,14 +72,14 @@ export function useOrderParam(defaultValue: 'asc' | 'desc' = 'desc') {
 export function useTabParam(defaultValue = '') {
   return useQueryState(
     'tab',
-    parseAsString.withDefault(defaultValue).withOptions({ shallow: true })
+    parseAsString.withDefault(defaultValue).withOptions({ shallow: true }),
   );
 }
 
 /**
  * Multiple parameters at once
  * Usage: Combine multiple URL params with type safety
- * 
+ *
  * @example
  * ```tsx
  * const [params, setParams] = usePaginationParams();
@@ -81,12 +88,15 @@ export function useTabParam(defaultValue = '') {
  * ```
  */
 export function usePaginationParams() {
-  return useQueryStates({
-    page: parseAsInteger.withDefault(1),
-    search: parseAsString.withDefault(''),
-  }, {
-    shallow: true,
-  });
+  return useQueryStates(
+    {
+      page: parseAsInteger.withDefault(1),
+      search: parseAsString.withDefault(''),
+    },
+    {
+      shallow: true,
+    },
+  );
 }
 
 /**
@@ -94,10 +104,41 @@ export function usePaginationParams() {
  * Usage: For chat filtering and navigation
  */
 export function useChatParams() {
-  return useQueryStates({
-    search: parseAsString.withDefault(''),
-    filter: parseAsString.withDefault('all'), // all, pinned, archived
-  }, {
-    shallow: true,
-  });
+  return useQueryStates(
+    {
+      search: parseAsString.withDefault(''),
+      filter: parseAsString.withDefault('all'), // all, pinned, archived
+    },
+    {
+      shallow: true,
+    },
+  );
+}
+
+/**
+ * Combined chat message modifiers (tone and length)
+ * Usage: ?tone=professional&length=comprehensive
+ */
+export function useMessageModifiers() {
+  return useQueryStates(
+    {
+      tone: parseAsLiteral([
+        'neutral',
+        'professional',
+        'casual',
+        'friendly',
+        'concise',
+      ] as const).withDefault(DEFAULT_TONE),
+      length: parseAsLiteral([
+        'auto',
+        'brief',
+        'balanced',
+        'detailed',
+        'comprehensive',
+      ] as const).withDefault(DEFAULT_LENGTH),
+    },
+    {
+      shallow: true,
+    },
+  );
 }

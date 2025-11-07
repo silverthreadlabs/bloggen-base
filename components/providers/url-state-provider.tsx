@@ -1,9 +1,9 @@
 /**
  * NuqsAdapter Provider
- * 
+ *
  * Wraps the app with nuqs context for Next.js App Router.
  * Required for nuqs to work with Next.js 15+
- * 
+ *
  * @see https://nuqs.47ng.com/docs/adapters/next-app
  */
 

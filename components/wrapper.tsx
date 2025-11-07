@@ -31,9 +31,7 @@ const queryClient = new QueryClient();
 export function WrapperWithQuery(props: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <URLStateProvider>
-        {props.children}
-      </URLStateProvider>
+      <URLStateProvider>{props.children}</URLStateProvider>
     </QueryClientProvider>
   );
 }

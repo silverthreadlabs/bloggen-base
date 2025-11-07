@@ -1,9 +1,9 @@
 /**
  * Custom URL parameter parsers and serializers for nuqs
- * 
+ *
  * Extend nuqs with custom types and complex state serialization.
  * All parsers are type-safe and include validation.
- * 
+ *
  * @see https://nuqs.47ng.com/docs/parsers
  */
 
@@ -52,7 +52,7 @@ export const parseAsIntegerArray = createParser({
 /**
  * Parse JSON object from URL (for complex state)
  * Use sparingly - prefer multiple simple params
- * 
+ *
  * @example
  * const [filters, setFilters] = useQueryState('filters', parseAsJson);
  */
@@ -81,7 +81,7 @@ export const parseAsDate = createParser({
 
 /**
  * Parse literal union types (enums)
- * 
+ *
  * @example
  * const viewParser = parseAsLiteral(['grid', 'list'] as const);
  * const [view, setView] = useQueryState('view', viewParser.withDefault('grid'));
@@ -103,15 +103,16 @@ export const parseAsDateRange = createParser({
   parse: (value) => {
     const [start, end] = value.split(',');
     if (!start || !end) return null;
-    
+
     const startDate = new Date(start);
     const endDate = new Date(end);
-    
+
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return null;
     }
-    
+
     return { start: startDate, end: endDate };
   },
-  serialize: (value) => `${value.start.toISOString()},${value.end.toISOString()}`,
+  serialize: (value) =>
+    `${value.start.toISOString()},${value.end.toISOString()}`,
 });
