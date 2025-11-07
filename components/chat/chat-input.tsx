@@ -18,34 +18,45 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
+import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
+import { LengthSelector } from './length-selector';
+import { ToneSelector } from './tone-selector';
 
 type Props = {
   text: string;
-  onTextChange: (text: string) => void;
+  onTextChangeAction: (text: string) => void;
   useWebSearch: boolean;
-  onWebSearchChange: (use: boolean) => void;
+  onWebSearchChangeAction: (use: boolean) => void;
   useMicrophone: boolean;
-  onMicrophoneChange: (use: boolean) => void;
+  onMicrophoneChangeAction: (use: boolean) => void;
+  tone: ToneOption;
+  onToneChangeAction: (tone: ToneOption) => void;
+  length: LengthOption;
+  onLengthChangeAction: (length: LengthOption) => void;
   status: 'submitted' | 'streaming' | 'ready' | 'error';
-  onSubmit: (message: PromptInputMessage) => void;
-  onStop: () => void;
+  onSubmitAction: (message: PromptInputMessage) => void;
+  onStopAction: () => void;
   disabled?: boolean;
 };
 
 export function ChatInput({
   text,
-  onTextChange,
+  onTextChangeAction,
   useWebSearch,
-  onWebSearchChange,
+  onWebSearchChangeAction,
   useMicrophone,
-  onMicrophoneChange,
+  onMicrophoneChangeAction,
+  tone,
+  onToneChangeAction,
+  length,
+  onLengthChangeAction,
   status,
-  onSubmit,
-  onStop,
+  onSubmitAction,
+  onStopAction,
   disabled = false,
 }: Props) {
   return (
-    <PromptInput globalDrop multiple onSubmit={onSubmit}>
+    <PromptInput globalDrop multiple onSubmit={onSubmitAction}>
       <PromptInputHeader>
         <PromptInputAttachments>
           {(attachment) => <PromptInputAttachment data={attachment} />}
@@ -53,7 +64,7 @@ export function ChatInput({
       </PromptInputHeader>
       <PromptInputBody>
         <PromptInputTextarea
-          onChange={(event) => onTextChange(event.target.value)}
+          onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}
           disabled={disabled}
         />
@@ -66,8 +77,18 @@ export function ChatInput({
               <PromptInputActionAddAttachments />
             </PromptInputActionMenuContent>
           </PromptInputActionMenu>
+          <ToneSelector
+            value={tone}
+            onChange={onToneChangeAction}
+            disabled={disabled}
+          />
+          <LengthSelector
+            value={length}
+            onChange={onLengthChangeAction}
+            disabled={disabled}
+          />
           <PromptInputButton
-            onClick={() => onMicrophoneChange(!useMicrophone)}
+            onClick={() => onMicrophoneChangeAction(!useMicrophone)}
             variant={useMicrophone ? 'solid' : 'ghost'}
             disabled={disabled}
           >
@@ -75,7 +96,7 @@ export function ChatInput({
             <span className="sr-only">Microphone</span>
           </PromptInputButton>
           <PromptInputButton
-            onClick={() => onWebSearchChange(!useWebSearch)}
+            onClick={() => onWebSearchChangeAction(!useWebSearch)}
             variant={useWebSearch ? 'solid' : 'ghost'}
             disabled={disabled}
           >
@@ -89,7 +110,7 @@ export function ChatInput({
           onClick={(e) => {
             if (status === 'streaming') {
               e.preventDefault();
-              onStop();
+              onStopAction();
             }
           }}
         />

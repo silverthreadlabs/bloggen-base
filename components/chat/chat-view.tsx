@@ -8,9 +8,8 @@ import {
 } from '@/components/ai-elements/conversation';
 import { Loader } from '@/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
-import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
 
-import { suggestions } from './chat-data';
 import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
 import { EmptyState } from './empty-state';
@@ -27,6 +26,10 @@ type Props = {
   setUseWebSearch: (use: boolean) => void;
   useMicrophone: boolean;
   setUseMicrophone: (use: boolean) => void;
+  tone: ToneOption;
+  setTone: (tone: ToneOption) => void;
+  length: LengthOption;
+  setLength: (length: LengthOption) => void;
   chatTitle?: string;
   chatId?: string;
   pinned?: boolean;
@@ -53,6 +56,10 @@ export function ChatView({
   setUseWebSearch,
   useMicrophone,
   setUseMicrophone,
+  tone,
+  setTone,
+  length,
+  setLength,
   chatTitle,
   chatId,
   pinned = false,
@@ -129,14 +136,18 @@ export function ChatView({
         <div className="mx-auto w-full max-w-4xl px-4 pb-4">
           <ChatInput
             text={text}
-            onTextChange={setText}
+            onTextChangeAction={setText}
             useWebSearch={useWebSearch}
-            onWebSearchChange={setUseWebSearch}
+            onWebSearchChangeAction={setUseWebSearch}
             useMicrophone={useMicrophone}
-            onMicrophoneChange={setUseMicrophone}
+            onMicrophoneChangeAction={setUseMicrophone}
+            tone={tone}
+            onToneChangeAction={setTone}
+            length={length}
+            onLengthChangeAction={setLength}
             status={status}
-            onSubmit={onSubmit}
-            onStop={onStop}
+            onSubmitAction={onSubmit}
+            onStopAction={onStop}
             disabled={isLoadingChat}
           />
         </div>

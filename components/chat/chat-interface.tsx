@@ -9,6 +9,7 @@ import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
 import { useChats } from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
+import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import {
   useChatPinStatus,
   useToggleChatPin,
@@ -33,9 +34,13 @@ export function ChatInterface({
   const [text, setText] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
-  const isFirstMessageRef = useRef(
-    initialChat?.messages?.length ? false : true,
-  );
+
+  const [modifiers, setModifiers] = useMessageModifiers();
+
+  const modifiersRef = useRef(modifiers);
+  modifiersRef.current = modifiers;
+
+  const isFirstMessageRef = useRef(!initialChat?.messages?.length);
 
   const { data: allChats } = useChats();
 
@@ -106,7 +111,15 @@ export function ChatInterface({
         });
       }
 
-      sendMessage({ text: message.text });
+      sendMessage(
+        { text: message.text },
+        {
+          body: {
+            tone: modifiersRef.current.tone,
+            length: modifiersRef.current.length,
+          },
+        },
+      );
       setText('');
     },
     [sendMessage, isLoading],
@@ -264,6 +277,10 @@ export function ChatInterface({
       setUseWebSearch={setUseWebSearch}
       useMicrophone={useMicrophone}
       setUseMicrophone={setUseMicrophone}
+      tone={modifiers.tone}
+      setTone={(tone) => setModifiers({ tone, length: modifiers.length })}
+      length={modifiers.length}
+      setLength={(length) => setModifiers({ tone: modifiers.tone, length })}
       pinned={pinned}
       chatTitle={initialChat?.title}
       onSubmit={handleSubmit}
