@@ -59,7 +59,10 @@ function getRateLimiter(role: RateLimitRole): Ratelimit {
 export async function checkRateLimit(): Promise<RateLimitResult> {
   try {
     // Check if Redis is configured
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    if (
+      !process.env.UPSTASH_REDIS_REST_URL ||
+      !process.env.UPSTASH_REDIS_REST_TOKEN
+    ) {
       console.warn(
         'Upstash Redis not configured. Rate limiting will be bypassed. Please set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables.',
       );
@@ -119,7 +122,10 @@ export async function checkRateLimitWithRole(
   identifier: string,
 ): Promise<RateLimitResult> {
   try {
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    if (
+      !process.env.UPSTASH_REDIS_REST_URL ||
+      !process.env.UPSTASH_REDIS_REST_TOKEN
+    ) {
       return {
         success: true,
         remaining: 999,

@@ -19,9 +19,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/admin/:path*',
-    '/settings/:path*',
-    '/accept-invitation/:path*',
-  ],
+  matcher: ['/admin/:path*', '/settings/:path*', '/accept-invitation/:path*'],
 };

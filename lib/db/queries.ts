@@ -5,9 +5,8 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import { generateUUID } from '../utils';
-  import { type User, user } from './schema';
+import { type User, user } from './schema';
 import { generateHashedPassword } from './utils';
-
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth

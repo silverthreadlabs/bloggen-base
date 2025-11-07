@@ -2,8 +2,8 @@ import 'server-only';
 
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth/auth';
-import type { RateLimitRole } from './types';
 import type { BetterAuthSession } from '@/lib/auth/auth-types';
+import type { RateLimitRole } from './types';
 
 /**
  * Extract IP address from request headers
@@ -51,9 +51,7 @@ export async function getSession(): Promise<BetterAuthSession | null> {
  * Check if user has an active paid subscription
  * A user is considered "paid" if they have an active or trialing subscription
  */
-export async function hasActiveSubscription(
-  userId: string,
-): Promise<boolean> {
+export async function hasActiveSubscription(userId: string): Promise<boolean> {
   try {
     const headersList = await headers();
     const subscriptions = await auth.api.listActiveSubscriptions({
@@ -125,7 +123,10 @@ export async function getRateLimitIdentifier(
  * - anon:192.168.1.1
  * - user:abc123def456
  */
-export function getRateLimitKey(role: RateLimitRole, identifier: string): string {
+export function getRateLimitKey(
+  role: RateLimitRole,
+  identifier: string,
+): string {
   const prefix = role === 'anonymous' ? 'anon' : 'user';
   return `${prefix}:${identifier}`;
 }
