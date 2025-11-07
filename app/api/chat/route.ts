@@ -11,6 +11,7 @@ import {
   saveMessage,
 } from '@/lib/db/chat-queries';
 import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
+import { getSystemPrompt } from '@/lib/config/prompts';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -146,10 +147,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Start streaming immediately
+    // Start streaming immediately with system prompt
     const result = streamText({
       model: openai('gpt-4o-mini'),
-      system: 'You are a helpful AI assistant. Be concise and friendly.',
+      system: getSystemPrompt('default'),
       messages: convertToModelMessages(messages),
     });
 
