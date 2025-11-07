@@ -1,6 +1,6 @@
 /**
  * System Prompts Configuration
- * 
+ *
  * Centralized location for AI system prompts.
  * These prompts are injected at the start of conversations
  * but not displayed in the UI.
@@ -35,7 +35,7 @@ Always aim to be helpful and educational while maintaining a friendly tone.`;
  */
 export const PROMPTS = {
   default: DEFAULT_SYSTEM_PROMPT,
-  
+
   // Add more specialized prompts as needed:
   // coding: '...',
   // creative: '...',

@@ -5,13 +5,18 @@ import {
   handleApiError,
 } from '@/lib/api/utils';
 import {
+  applyMessageModifiers,
+  type LengthOption,
+  type ToneOption,
+} from '@/lib/config/message-modifiers';
+import { getSystemPrompt } from '@/lib/config/prompts';
+import {
   createChat,
   getChatById,
   messageExistsById,
   saveMessage,
 } from '@/lib/db/chat-queries';
 import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
-import { getSystemPrompt } from '@/lib/config/prompts';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -60,22 +65,24 @@ export async function POST(req: Request) {
       messages,
       id,
       isRegenerate,
-    }: { messages: UIMessage[]; id?: string; isRegenerate?: boolean } = body;
+      tone,
+      length,
+    }: {
+      messages: UIMessage[];
+      id?: string;
+      isRegenerate?: boolean;
+      tone?: ToneOption;
+      length?: LengthOption;
+    } = body;
 
-    // If not in query, check body.id (from useChat id parameter)
     if (!chatId && id) {
       chatId = id;
     }
 
-    // Vercel pattern: Check if chat exists, if not create it (auto-create on first message)
     if (chatId) {
       const existingChat = await getChatById(chatId);
 
       if (!existingChat) {
-        // Chat doesn't exist yet - create it now (seamless new chat pattern)
-        console.log('[API] Creating new chat with ID:', chatId);
-
-        // Generate title from first user message (similar to Vercel)
         const firstUserMessage = messages.find((m) => m.role === 'user');
         let title = 'New Chat';
 
@@ -86,58 +93,33 @@ export async function POST(req: Request) {
               .map((part: any) => part.text)
               .join('') || '';
 
-          // Use first 50 chars as title
           if (textContent.trim()) {
             title = textContent.slice(0, 50).trim();
           }
         }
 
-        // Create chat with generated ID (server-generated from /chat page)
         await createChat(user.id, title, chatId);
       }
     }
 
-    // If chatId is provided, save the user message asynchronously (don't wait)
     if (chatId && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'user') {
-        // Extract text content from parts
         const content = lastMessage.parts
           .filter((part) => part.type === 'text')
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
 
-        // Check if this message ID already exists in the database
-        // This prevents duplicates even if content is the same
-        console.log('[API] Checking if user message exists:', {
-          messageId: lastMessage.id,
-          content: content.substring(0, 50) + '...',
-        });
-
         messageExistsById(lastMessage.id)
           .then((exists) => {
-            console.log('[API] Message exists check result:', {
-              messageId: lastMessage.id,
-              exists,
-            });
-
             if (!exists) {
-              console.log(
-                '[API] Saving new user message with ID:',
-                lastMessage.id,
-              );
-              // New message - save it with the AI SDK's ID
               return saveMessage(
                 chatId,
                 'user',
                 content,
                 lastMessage.parts,
                 [],
-                lastMessage.id, // Use the AI SDK's message ID
-              );
-            } else {
-              console.log(
-                '[API] User message ID already exists in DB, skipping save (regeneration or duplicate)',
+                lastMessage.id,
               );
             }
           })
@@ -147,14 +129,38 @@ export async function POST(req: Request) {
       }
     }
 
-    // Start streaming immediately with system prompt
+    const modifiedMessages = [...messages];
+    if (tone || length) {
+      const lastMessageIndex = modifiedMessages.length - 1;
+      const lastMessage = modifiedMessages[lastMessageIndex];
+
+      if (lastMessage?.role === 'user') {
+        const originalContent = lastMessage.parts
+          .filter((part) => part.type === 'text')
+          .map((part) => (part.type === 'text' ? part.text : ''))
+          .join('');
+
+        const modifiedContent = applyMessageModifiers(
+          originalContent,
+          tone || 'neutral',
+          length || 'auto',
+        );
+
+        modifiedMessages[lastMessageIndex] = {
+          ...lastMessage,
+          parts: lastMessage.parts.map((part) =>
+            part.type === 'text' ? { ...part, text: modifiedContent } : part,
+          ),
+        };
+      }
+    }
+
     const result = streamText({
       model: openai('gpt-4o-mini'),
       system: getSystemPrompt('default'),
-      messages: convertToModelMessages(messages),
+      messages: convertToModelMessages(modifiedMessages),
     });
 
-    // Add rate limit headers to successful response
     const response = result.toUIMessageStreamResponse();
     const headers = new Headers(response.headers);
     headers.set(
