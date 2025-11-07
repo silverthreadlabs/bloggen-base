@@ -1,16 +1,8 @@
-import { GoogleAnalytics } from '@next/third-parties/google';
-
 import type { Viewport } from 'next';
 import { Manrope } from 'next/font/google';
-import Script from 'next/script';
 
 import { ThemeProvider } from 'next-themes';
-import { Suspense } from 'react';
-import Banner from '@/components/layout/banner/banner';
-import Footer from '@/components/layout/footer/footer';
-import Header from '@/components/layout/header/header';
-import { Wrapper, WrapperWithQuery } from '@/components/wrapper';
-import { env } from '@/lib/utils/env';
+import { WrapperWithQuery } from '@/components/wrapper';
 
 import './global.css';
 import { RootProvider } from 'fumadocs-ui/provider';

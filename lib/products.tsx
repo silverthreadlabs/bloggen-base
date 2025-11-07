@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import type { ProductMetadata } from './types/post-metadata';
 import { getMDXData } from './utils/mdx';
 

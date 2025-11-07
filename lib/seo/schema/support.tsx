@@ -1,9 +1,4 @@
-import type {
-  BreadcrumbList,
-  ContactPage,
-  Organization,
-  WithContext,
-} from 'schema-dts';
+import type { ContactPage, WithContext } from 'schema-dts';
 import { siteConfig } from '@/lib/config/site';
 
 // Contact Page Schema

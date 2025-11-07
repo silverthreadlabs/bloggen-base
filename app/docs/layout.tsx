@@ -1,15 +1,9 @@
 import { LargeSearchToggle } from 'fumadocs-ui/components/layout/search-toggle';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
-import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { baseOptions, linkItems, logo } from '@/app/layout.config';
-import Footer from '@/components/layout/footer/footer';
-import Header from '@/components/layout/header/header';
-import { buttonVariants } from '@/components/ui/button';
 // import { baseOptions } from '@/app/layout.config';
 import { source } from '@/lib/source';
-import { cn } from '@/lib/utils';
 // import { AISearchTrigger } from '@/components/ai';
 // import 'katex/dist/katex.min.css';
 

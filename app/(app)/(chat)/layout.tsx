@@ -1,5 +1,4 @@
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { ChatLayoutClient } from '@/components/chat/chat-layout-client';
 import { auth } from '@/lib/auth/auth';
