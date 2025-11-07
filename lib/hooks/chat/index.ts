@@ -32,3 +32,11 @@ export {
   useSaveMessage,
   useUpdateMessage,
 } from './use-message-mutations';
+
+// Component Hooks (for chat UI components)
+export {
+  useChatActions,
+  useChatOperations,
+  useChatSync,
+  useMessageOperations,
+} from './component-hooks';

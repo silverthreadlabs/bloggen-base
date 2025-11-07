@@ -3,9 +3,17 @@
 // ============================================================================
 
 export { default as ChatClient } from './chat-client';
-export { ChatHeader } from './chat-header';
-export { EmptyState } from './empty-state';
-export { MessageAvatar } from './message-avatar';
+export {
+  ChatHeader,
+  ChatInput,
+  ChatSidebar,
+  ChatView,
+  EmptyState,
+  MessageAvatar,
+  MessageList,
+} from './ui';
+
+export { LengthSelector, ToneSelector } from './selectors';
 
 // ============================================================================
 // TYPE EXPORTS
@@ -23,7 +31,7 @@ export { hardcodedMessages, mockResponses, suggestions } from './chat-data';
 // HOOK EXPORTS
 // ============================================================================
 
-export { useChatActions } from './hooks/use-chat-actions';
+export { useChatActions } from '@/lib/hooks/chat';
 
 // ============================================================================
 // UTILITY EXPORTS

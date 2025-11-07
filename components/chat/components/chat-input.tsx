@@ -19,8 +19,7 @@ import {
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
-import { LengthSelector } from './length-selector';
-import { ToneSelector } from './tone-selector';
+import { LengthSelector, ToneSelector } from '../selectors';
 
 type Props = {
   text: string;

@@ -8,7 +8,7 @@ import { Message, MessageContent } from '@/components/ai-elements/message';
 import { Response } from '@/components/ai-elements/response';
 import { useChatActions } from '@/lib/hooks/chat';
 import { MessageAvatar } from './message-avatar';
-import { isLastAssistantMessage } from './utils/message-utils';
+import { isLastAssistantMessage } from '../utils/message-utils';
 
 type Props = {
   messages: UIMessage[];

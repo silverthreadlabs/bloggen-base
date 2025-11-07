@@ -15,9 +15,8 @@ import {
   useToggleChatPin,
 } from '@/lib/stores/chat-pin-store';
 import { generateUUID } from '@/lib/utils';
-import { ChatView } from './chat-view';
-import { useChatOperations } from './hooks/use-chat-operations';
-import { useMessageOperations } from './hooks/use-message-operations';
+import { ChatView } from './ui/chat-view';
+import { useChatOperations, useMessageOperations } from '@/lib/hooks/chat';
 
 type Props = {
   chatId: string;

@@ -40,11 +40,9 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Response } from '@/components/ai-elements/response';
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { useChatActions } from '@/lib/hooks/chat';
 import { hardcodedMessages, mockResponses, suggestions } from './chat-data';
-import { ChatHeader } from './chat-header';
-import { EmptyState } from './empty-state';
-import { useChatActions } from './hooks/use-chat-actions';
-import { MessageAvatar } from './message-avatar';
+import { ChatHeader, EmptyState, MessageAvatar } from './ui';
 import type { HardcodedMessageType } from './types';
 import { isLastAssistantMessage } from './utils/message-utils';
 
