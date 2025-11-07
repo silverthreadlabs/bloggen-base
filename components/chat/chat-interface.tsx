@@ -34,6 +34,7 @@ export function ChatInterface({
   const [text, setText] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
+  const [isSavingMessage, setIsSavingMessage] = useState(false);
 
   const [modifiers, setModifiers] = useMessageModifiers();
 
@@ -79,6 +80,7 @@ export function ChatInterface({
             .join('') || '';
 
         if (content.trim()) {
+          setIsSavingMessage(true);
           await messageOps.saveMessage(
             {
               role: 'assistant',
@@ -87,6 +89,7 @@ export function ChatInterface({
             },
             result.message.id,
           );
+          setIsSavingMessage(false);
         }
       }
 
@@ -191,8 +194,15 @@ export function ChatInterface({
           // Remove the assistant message and all messages after it from local state
           setMessages(messagesUpToEdit);
 
-          // Regenerate the response with the updated user message
-          aiRegenerate();
+          // Regenerate using the edited user message ID
+          aiRegenerate({
+            messageId: messageId, // This is already the user message ID
+            body: {
+              tone: modifiersRef.current.tone,
+              length: modifiersRef.current.length,
+            },
+          });
+
           toast.success('Regenerating response with edited message...');
         } catch (error) {
           console.error('Error regenerating after edit:', error);
@@ -205,7 +215,7 @@ export function ChatInterface({
         setMessages(updatedMessages);
       }
     },
-    [messageOps, messages, setMessages, aiRegenerate],
+    [messageOps, messages, setMessages, sendMessage],
   );
 
   const handleRegenerate = useCallback(
@@ -219,15 +229,36 @@ export function ChatInterface({
           deleteTrailingMessages({ id: messageId }),
         );
 
+        // Find the last user message before this assistant message
+        const userMessage = messages
+          .slice(0, messageIndex)
+          .reverse()
+          .find((m) => m.role === 'user');
+
+        if (!userMessage) {
+          toast.error('No user message found to regenerate from');
+          return;
+        }
+
+        // Remove the assistant message and all messages after it
         setMessages(messages.slice(0, messageIndex));
-        aiRegenerate();
+
+        // Regenerate using the user message ID (the message before the assistant message)
+        aiRegenerate({
+          messageId: userMessage.id,
+          body: {
+            tone: modifiersRef.current.tone,
+            length: modifiersRef.current.length,
+          },
+        });
+
         toast.success('Regenerating response...');
       } catch (error) {
         console.error('Error regenerating:', error);
         toast.error('Failed to regenerate');
       }
     },
-    [messages, setMessages, aiRegenerate, messageOps],
+    [messages, setMessages, sendMessage, messageOps],
   );
 
   const handleDeleteChat = useCallback(async () => {
@@ -271,6 +302,7 @@ export function ChatInterface({
       status={status}
       isLoading={isLoading}
       isLoadingChat={isLoadingChat}
+      isSavingMessage={isSavingMessage}
       text={text}
       setText={setText}
       useWebSearch={useWebSearch}

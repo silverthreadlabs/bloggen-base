@@ -13,6 +13,7 @@ import { isLastAssistantMessage } from './utils/message-utils';
 type Props = {
   messages: UIMessage[];
   isLoading: boolean;
+  isSavingMessage?: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onRegenerate: (messageId: string) => void;
@@ -21,6 +22,7 @@ type Props = {
 export function MessageList({
   messages,
   isLoading,
+  isSavingMessage = false,
   onDelete,
   onEdit,
   onRegenerate,
@@ -115,6 +117,7 @@ export function MessageList({
                     <Action
                       tooltip="Regenerate"
                       onClick={() => onRegenerate(message.id)}
+                      disabled={isSavingMessage || isLoading}
                     >
                       <RefreshCwIcon className="size-3" />
                     </Action>
