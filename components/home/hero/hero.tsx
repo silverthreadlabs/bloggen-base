@@ -1,17 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ImageError } from 'next/dist/server/image-optimizer';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
-import {
-  FaArrowRight,
-  FaCheck,
-  FaCopy,
-  FaGithub,
-  FaStar,
-} from 'react-icons/fa';
+import { FaArrowRight, FaCheck, FaCopy, FaGithub } from 'react-icons/fa';
 import { HiLightningBolt, HiSparkles } from 'react-icons/hi';
 import { HiShieldCheck } from 'react-icons/hi2';
 import { Button } from '@/components/ui/button';

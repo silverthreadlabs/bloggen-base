@@ -2,9 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-import Image from 'next/image';
 import React from 'react';
-import { HiSparkles } from 'react-icons/hi';
 import InfiniteCarousel from '@/components/infinite-carousel';
 import { AhrfeIcon } from '../../../public/assets/seo-tools/ahref';
 import { GtmetrixIcon } from '../../../public/assets/seo-tools/gtmetrix';

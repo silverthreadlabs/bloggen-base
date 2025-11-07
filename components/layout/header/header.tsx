@@ -176,20 +176,18 @@ export default function Header({ session }: { session: Session }) {
             <li>
               <div className="flex flex-col gap-3">
                 {session && (
-                  <>
-                    <Link href="/settings" className="flex">
-                      <Button
-                        color="primary"
-                        size="default"
-                        variant="solid"
-                        aria-label="Settings"
-                        name="Settings"
-                        fullWidth
-                      >
-                        Settings
-                      </Button>
-                    </Link>
-                  </>
+                  <Link href="/settings" className="flex">
+                    <Button
+                      color="primary"
+                      size="default"
+                      variant="solid"
+                      aria-label="Settings"
+                      name="Settings"
+                      fullWidth
+                    >
+                      Settings
+                    </Button>
+                  </Link>
                 )}
                 <div className="flex flex-col gap-2">
                   {session ? (

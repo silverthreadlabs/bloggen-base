@@ -1,15 +1,12 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  HiChartBar,
   HiCode,
   HiCog,
   HiGlobeAlt,
   HiLightningBolt,
   HiShieldCheck,
-  HiSparkles,
   HiTrendingUp,
 } from 'react-icons/hi';
 

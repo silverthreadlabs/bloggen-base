@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { FaRegEnvelope } from 'react-icons/fa';
 import { LogoDark, LogoLight } from '@/components/logo/logo';
 import { ThemeSwitcher } from '@/components/ui/theme-switcher';
 import SocialLinks from './social-links';

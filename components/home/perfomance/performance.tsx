@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import React from 'react';
-import { HiAcademicCap, HiSparkles } from 'react-icons/hi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const testimonials = [
