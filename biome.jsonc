@@ -83,10 +83,9 @@
       },
       "suspicious": {
         "noExplicitAny": "off",
-        "noArrayIndexKey": "off", //temporarily off for now
-        "noDocumentCookie": "off", //temporarily off for now
-        "noAssignInExpressions": "off" //temporarily off for now
-        // "useIterableCallbackReturn ": "off" //temporarily off for now
+        "noArrayIndexKey": "off",
+        "noDocumentCookie": "off",
+        "noAssignInExpressions": "off"
       }
     }
   },

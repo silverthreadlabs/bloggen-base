@@ -1,13 +1,7 @@
 'use client';
 
 import type { UIMessage } from '@ai-sdk/react';
-import {
-  CheckIcon,
-  CopyIcon,
-  PencilIcon,
-  RefreshCwIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { CheckIcon, CopyIcon, PencilIcon, RefreshCwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Action, Actions } from '@/components/ai-elements/actions';
 import { Message, MessageContent } from '@/components/ai-elements/message';

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { UIMessage } from '@ai-sdk/react';
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { chat, type DBMessage, message, vote } from './schema';

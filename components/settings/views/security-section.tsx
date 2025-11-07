@@ -1,6 +1,5 @@
 'use client';
 
-import { MobileIcon } from '@radix-ui/react-icons';
 import {
   Key,
   Laptop,

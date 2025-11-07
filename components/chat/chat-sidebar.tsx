@@ -468,6 +468,7 @@ export function ChatSidebar({ currentChatId }: Props) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
+                type="button"
                 className={cn(
                   'flex items-center gap-2 rounded-md p-1.5 hover:bg-sidebar-accent transition-colors',
                   'group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center',

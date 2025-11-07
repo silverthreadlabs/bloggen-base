@@ -2,14 +2,7 @@
 
 import { ChevronDownIcon, PlusIcon } from '@radix-ui/react-icons';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Building2,
-  Loader2,
-  MailPlus,
-  Settings,
-  UserPlus,
-  Users,
-} from 'lucide-react';
+import { Building2, MailPlus, UserPlus, Users } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -416,7 +409,7 @@ function CreateOrganizationDialog() {
   }, [open]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
