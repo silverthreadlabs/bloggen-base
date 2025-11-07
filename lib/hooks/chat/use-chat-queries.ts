@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { fetchChat, fetchChats } from './api';
 import { chatKeys } from './query-keys';
-import { fetchChats, fetchChat } from './api';
 
 /**
  * Fetch all chats for the current user
@@ -22,5 +22,10 @@ export function useChat(chatId: string | undefined) {
     queryKey: chatKeys.detail(chatId!),
     queryFn: () => fetchChat(chatId!),
     enabled: !!chatId,
+    retry: 0,
+    retryOnMount: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

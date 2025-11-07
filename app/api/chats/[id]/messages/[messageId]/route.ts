@@ -1,14 +1,14 @@
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import { NextResponse } from 'next/server';
+import postgres from 'postgres';
 import { auth } from '@/lib/auth/auth';
 import {
-  updateMessage,
   deleteMessage,
   getChatById,
+  updateMessage,
 } from '@/lib/db/chat-queries';
 import { message as messageTable } from '@/lib/db/schema';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import { eq } from 'drizzle-orm';
 
 if (!process.env.DB_CONNECTION_STRING) {
   throw new Error('DB_CONNECTION_STRING environment variable is not set');
@@ -38,7 +38,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     if (!content) {
       return NextResponse.json(
         { error: 'Content is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     const updated = await updateMessage(
       messageId,
       content,
-      parts || [{ type: 'text', text: content }]
+      parts || [{ type: 'text', text: content }],
     );
 
     return NextResponse.json({ message: updated });
@@ -63,7 +63,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     console.error('Error updating message:', error);
     return NextResponse.json(
       { error: 'Failed to update message' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -98,10 +98,7 @@ export async function DELETE(req: Request, context: RouteContext) {
       .limit(1);
 
     if (!msg || msg.chatId !== chatId) {
-      return NextResponse.json(
-        { error: 'Message not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     }
 
     await deleteMessage(messageId);
@@ -111,7 +108,7 @@ export async function DELETE(req: Request, context: RouteContext) {
     console.error('Error deleting message:', error);
     return NextResponse.json(
       { error: 'Failed to delete message' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

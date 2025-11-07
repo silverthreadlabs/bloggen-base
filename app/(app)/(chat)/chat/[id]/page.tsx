@@ -9,9 +9,5 @@ export default async function ChatDetailPage({ params }: Props) {
 
   // Don't fetch session or chat here - let client handle it
   // Layout already verified auth, and React Query will handle data fetching
-  return (
-    <ChatContainer 
-      chatId={id}
-    />
-  );
+  return <ChatContainer chatId={id} />;
 }

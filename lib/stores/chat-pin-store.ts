@@ -1,12 +1,12 @@
 'use client';
 
-import { create } from 'zustand';
-import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
-import { chatKeys } from '@/lib/hooks/chat/query-keys';
-import { togglePinChat } from '@/lib/actions/chat-actions';
-import type { Chat, ChatWithMessages } from '@/lib/hooks/chat/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { create } from 'zustand';
+import { togglePinChat } from '@/lib/actions/chat-actions';
+import { chatKeys } from '@/lib/hooks/chat/query-keys';
+import type { Chat, ChatWithMessages } from '@/lib/hooks/chat/types';
 
 interface PinState {
   // Optimistic pin states: chatId -> pinned status (using Record for reactivity)
@@ -17,7 +17,11 @@ interface PinState {
 
 interface PinActions {
   // Toggle pin status with optimistic update
-  togglePin: (chatId: string, pinned: boolean, queryClient: QueryClient) => Promise<void>;
+  togglePin: (
+    chatId: string,
+    pinned: boolean,
+    queryClient: QueryClient,
+  ) => Promise<void>;
   // Get current pin status (optimistic or from cache)
   getPinStatus: (chatId: string, queryClient: QueryClient) => boolean;
   // Clear optimistic state
@@ -30,9 +34,13 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
   optimisticPins: {},
   pendingOperations: {},
 
-  togglePin: async (chatId: string, pinned: boolean, queryClient: QueryClient) => {
+  togglePin: async (
+    chatId: string,
+    pinned: boolean,
+    queryClient: QueryClient,
+  ) => {
     const state = get();
-    
+
     // Prevent duplicate operations
     if (state.pendingOperations[chatId]) {
       return;
@@ -44,7 +52,7 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
     });
 
     // Optimistically update immediately
-    set({ 
+    set({
       optimisticPins: { ...state.optimisticPins, [chatId]: pinned },
     });
 
@@ -53,15 +61,18 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
     queryClient.setQueryData<Chat[]>(chatKeys.list(), (old) => {
       if (!old) return old;
       return old.map((chat) =>
-        chat.id === chatId ? { ...chat, pinned } : chat
+        chat.id === chatId ? { ...chat, pinned } : chat,
       );
     });
 
     // Update chat detail
-    queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(chatId), (old) => {
-      if (!old) return old;
-      return { ...old, pinned };
-    });
+    queryClient.setQueryData<ChatWithMessages>(
+      chatKeys.detail(chatId),
+      (old) => {
+        if (!old) return old;
+        return { ...old, pinned };
+      },
+    );
 
     try {
       // Call server action directly (no API round trip - faster!)
@@ -70,8 +81,9 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
       // Remove from optimistic state after success
       const currentState = get();
       const { [chatId]: _, ...newOptimisticPins } = currentState.optimisticPins;
-      const { [chatId]: __, ...newPendingOperations } = currentState.pendingOperations;
-      
+      const { [chatId]: __, ...newPendingOperations } =
+        currentState.pendingOperations;
+
       set({
         optimisticPins: newOptimisticPins,
         pendingOperations: newPendingOperations,
@@ -84,8 +96,9 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
       // Rollback on error
       const currentState = get();
       const { [chatId]: _, ...newOptimisticPins } = currentState.optimisticPins;
-      const { [chatId]: __, ...newPendingOperations } = currentState.pendingOperations;
-      
+      const { [chatId]: __, ...newPendingOperations } =
+        currentState.pendingOperations;
+
       set({
         optimisticPins: newOptimisticPins,
         pendingOperations: newPendingOperations,
@@ -102,16 +115,19 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
 
   getPinStatus: (chatId: string, queryClient: QueryClient) => {
     const state = get();
-    
+
     // First check optimistic state
     if (chatId in state.optimisticPins) {
       return state.optimisticPins[chatId];
     }
 
     // Fallback to React Query cache
-    const chat = queryClient.getQueryData<ChatWithMessages>(chatKeys.detail(chatId)) ||
-                 queryClient.getQueryData<Chat[]>(chatKeys.list())?.find(c => c.id === chatId);
-    
+    const chat =
+      queryClient.getQueryData<ChatWithMessages>(chatKeys.detail(chatId)) ||
+      queryClient
+        .getQueryData<Chat[]>(chatKeys.list())
+        ?.find((c) => c.id === chatId);
+
     return chat?.pinned ?? false;
   },
 
@@ -126,7 +142,7 @@ export const useChatPinStore = create<ChatPinStore>((set, get) => ({
 export function useChatPinStatus(chatId: string | undefined): boolean {
   const queryClient = useQueryClient();
   const getPinStatus = useChatPinStore((state) => state.getPinStatus);
-  
+
   // Subscribe to optimistic pins changes for reactivity
   useChatPinStore((state) => state.optimisticPins);
 
@@ -145,4 +161,3 @@ export function useToggleChatPin() {
     await togglePin(chatId, pinned, queryClient);
   };
 }
-

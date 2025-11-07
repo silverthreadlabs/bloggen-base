@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import type { UIMessage } from '@ai-sdk/react';
+import { useEffect, useRef } from 'react';
 import { useSaveMessage } from '@/lib/hooks/chat';
 
 type Props = {
@@ -32,9 +32,8 @@ export function useChatSync({ chatId, messages, enabled }: Props) {
 
       // Find unsaved assistant messages
       const unsavedAssistantMessages = messages.filter(
-        (msg) => 
-          msg.role === 'assistant' && 
-          !syncedMessageIdsRef.current.has(msg.id)
+        (msg) =>
+          msg.role === 'assistant' && !syncedMessageIdsRef.current.has(msg.id),
       );
 
       if (unsavedAssistantMessages.length === 0) return;

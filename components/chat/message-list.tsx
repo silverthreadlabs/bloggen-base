@@ -1,14 +1,20 @@
 'use client';
 
 import type { UIMessage } from '@ai-sdk/react';
+import {
+  CheckIcon,
+  CopyIcon,
+  PencilIcon,
+  RefreshCwIcon,
+  Trash2Icon,
+} from 'lucide-react';
+import { useState } from 'react';
+import { Action, Actions } from '@/components/ai-elements/actions';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import { Response } from '@/components/ai-elements/response';
-import { Actions, Action } from '@/components/ai-elements/actions';
-import { CopyIcon, CheckIcon, RefreshCwIcon, Trash2Icon, PencilIcon } from 'lucide-react';
-import { MessageAvatar } from './message-avatar';
 import { useChatActions } from './hooks/use-chat-actions';
+import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from './utils/message-utils';
-import { useState } from 'react';
 
 type Props = {
   messages: UIMessage[];
@@ -59,7 +65,7 @@ export function MessageList({
           message,
           index,
           messages,
-          isLoading
+          isLoading,
         );
 
         const isEditing = editingId === message.id;
@@ -112,7 +118,10 @@ export function MessageList({
                   </Action>
 
                   {message.role === 'assistant' && (
-                    <Action tooltip="Regenerate" onClick={() => onRegenerate(message.id)}>
+                    <Action
+                      tooltip="Regenerate"
+                      onClick={() => onRegenerate(message.id)}
+                    >
                       <RefreshCwIcon className="size-3" />
                     </Action>
                   )}
@@ -136,9 +145,7 @@ export function MessageList({
                 </Actions>
               )}
             </div>
-            <MessageAvatar
-              role={message.role as 'user' | 'assistant'}
-            />
+            <MessageAvatar role={message.role as 'user' | 'assistant'} />
           </Message>
         );
       })}

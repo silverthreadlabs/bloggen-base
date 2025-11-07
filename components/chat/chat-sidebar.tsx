@@ -1,30 +1,34 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { 
-  Search, 
-  Plus, 
-  MessageSquare, 
-  History, 
-  ChevronDown, 
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  ChevronDown,
   ChevronRight,
-  MoreVertical,
-  Edit2,
-  Pin,
-  Trash2,
   ChevronsLeft,
   ChevronsRight,
-  Settings,
-  HelpCircle,
   Crown,
+  Edit2,
+  HelpCircle,
+  History,
   LogOut,
+  MessageSquare,
+  MoreVertical,
+  Pin,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
 } from 'lucide-react';
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useChats, useCreateChat, useDeleteChat, useUpdateChatTitle } from '@/lib/hooks/chat';
-import { useToggleChatPin, useChatPinStore } from '@/lib/stores/chat-pin-store';
-import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Sidebar,
   SidebarContent,
@@ -35,20 +39,21 @@ import {
   SidebarHeader,
   SidebarInput,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuAction,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
+import { signOut, useSession } from '@/lib/auth/auth-client';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useSidebar } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useSession, signOut } from '@/lib/auth/auth-client';
+  useChats,
+  useCreateChat,
+  useDeleteChat,
+  useUpdateChatTitle,
+} from '@/lib/hooks/chat';
+import { useChatPinStore, useToggleChatPin } from '@/lib/stores/chat-pin-store';
+import { cn } from '@/lib/utils';
 
 type Props = {
   currentChatId?: string;
@@ -63,7 +68,7 @@ export function ChatSidebar({ currentChatId }: Props) {
   const updateTitleMutation = useUpdateChatTitle();
   const togglePin = useToggleChatPin();
   const { toggleSidebar, state } = useSidebar();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,7 +109,10 @@ export function ChatSidebar({ currentChatId }: Props) {
     const grouped: Record<string, typeof unpinned> = {};
     unpinned.forEach((chat) => {
       const date = new Date(chat.createdAt);
-      const monthKey = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const monthKey = date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      });
       if (!grouped[monthKey]) {
         grouped[monthKey] = [];
       }
@@ -120,77 +128,89 @@ export function ChatSidebar({ currentChatId }: Props) {
     router.push('/chat');
   }, [router]);
 
-  const handleDeleteChat = useCallback((chatId: string) => {
-    if (!confirm('Delete this chat?')) return;
+  const handleDeleteChat = useCallback(
+    (chatId: string) => {
+      if (!confirm('Delete this chat?')) return;
 
-    // Find the next chat to navigate to before deleting
-    let nextChatId: string | undefined;
-    if (chats && chats.length > 0) {
-      const currentIndex = chats.findIndex(chat => chat.id === chatId);
-      if (currentIndex !== -1) {
-        // Try to find next chat (after current)
-        if (currentIndex < chats.length - 1) {
-          nextChatId = chats[currentIndex + 1].id;
-        } 
-        // Otherwise try previous chat (before current)
-        else if (currentIndex > 0) {
-          nextChatId = chats[currentIndex - 1].id;
-        }
-      }
-    }
-
-    deleteChatMutation.mutate(chatId, {
-      onSuccess: () => {
-        if (currentChatId === chatId) {
-          // Navigate to next chat if available, otherwise to /chat
-          if (nextChatId) {
-            router.replace(`/chat/${nextChatId}`);
-          } else {
-            router.replace('/chat');
+      // Find the next chat to navigate to before deleting
+      let nextChatId: string | undefined;
+      if (chats && chats.length > 0) {
+        const currentIndex = chats.findIndex((chat) => chat.id === chatId);
+        if (currentIndex !== -1) {
+          // Try to find next chat (after current)
+          if (currentIndex < chats.length - 1) {
+            nextChatId = chats[currentIndex + 1].id;
+          }
+          // Otherwise try previous chat (before current)
+          else if (currentIndex > 0) {
+            nextChatId = chats[currentIndex - 1].id;
           }
         }
-        toast.success('Chat deleted');
-      },
-      onError: () => {
-        toast.error('Failed to delete chat');
-      },
-    });
-  }, [deleteChatMutation, currentChatId, router, chats]);
+      }
 
-  const handlePinChat = useCallback(async (chatId: string, pinned: boolean) => {
-    await togglePin(chatId, pinned);
-  }, [togglePin]);
+      deleteChatMutation.mutate(chatId, {
+        onSuccess: () => {
+          if (currentChatId === chatId) {
+            // Navigate to next chat if available, otherwise to /chat
+            if (nextChatId) {
+              router.replace(`/chat/${nextChatId}`);
+            } else {
+              router.replace('/chat');
+            }
+          }
+          toast.success('Chat deleted');
+        },
+        onError: () => {
+          toast.error('Failed to delete chat');
+        },
+      });
+    },
+    [deleteChatMutation, currentChatId, router, chats],
+  );
 
-  const startEditing = useCallback((chatId: string, title: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingId(chatId);
-    setEditTitle(title);
-  }, []);
+  const handlePinChat = useCallback(
+    async (chatId: string, pinned: boolean) => {
+      await togglePin(chatId, pinned);
+    },
+    [togglePin],
+  );
+
+  const startEditing = useCallback(
+    (chatId: string, title: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditingId(chatId);
+      setEditTitle(title);
+    },
+    [],
+  );
 
   const cancelEditing = useCallback(() => {
     setEditingId(null);
     setEditTitle('');
   }, []);
 
-  const saveTitle = useCallback((chatId: string) => {
-    if (!editTitle.trim()) {
-      cancelEditing();
-      return;
-    }
-
-    updateTitleMutation.mutate(
-      { chatId, title: editTitle.trim() },
-      {
-        onSuccess: () => {
-          setEditingId(null);
-          toast.success('Title updated');
-        },
-        onError: () => {
-          toast.error('Failed to update title');
-        },
+  const saveTitle = useCallback(
+    (chatId: string) => {
+      if (!editTitle.trim()) {
+        cancelEditing();
+        return;
       }
-    );
-  }, [editTitle, updateTitleMutation, cancelEditing]);
+
+      updateTitleMutation.mutate(
+        { chatId, title: editTitle.trim() },
+        {
+          onSuccess: () => {
+            setEditingId(null);
+            toast.success('Title updated');
+          },
+          onError: () => {
+            toast.error('Failed to update title');
+          },
+        },
+      );
+    },
+    [editTitle, updateTitleMutation, cancelEditing],
+  );
 
   // Keyboard shortcut for search (Ctrl+K)
   useEffect(() => {
@@ -198,7 +218,9 @@ export function ChatSidebar({ currentChatId }: Props) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         // Focus search input
-        const searchInput = document.querySelector('[data-sidebar="input"]') as HTMLInputElement;
+        const searchInput = document.querySelector(
+          '[data-sidebar="input"]',
+        ) as HTMLInputElement;
         searchInput?.focus();
       }
     };
@@ -218,7 +240,10 @@ export function ChatSidebar({ currentChatId }: Props) {
           className="group/menu-item"
         >
           {isEditing ? (
-            <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex items-center gap-2 flex-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <input
                 type="text"
                 value={editTitle}
@@ -258,9 +283,10 @@ export function ChatSidebar({ currentChatId }: Props) {
               >
                 <Pin className="h-4 w-4 mr-2" />
                 {(() => {
-                  const isPinned = chat.id in optimisticPins
-                    ? optimisticPins[chat.id]
-                    : chat.pinned;
+                  const isPinned =
+                    chat.id in optimisticPins
+                      ? optimisticPins[chat.id]
+                      : chat.pinned;
                   return isPinned ? 'Unpin' : 'Pin';
                 })()}
               </DropdownMenuItem>
@@ -294,23 +320,25 @@ export function ChatSidebar({ currentChatId }: Props) {
       <SidebarHeader className="p-2">
         {/* Logo/Brand - Show only icon when collapsed */}
         <div className="flex items-center justify-center mb-2">
-          <div className={cn(
-            "flex items-center justify-center rounded-lg bg-primary/10 transition-all px-2 py-1.5",
-            "group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0"
-          )}>
-            <span className={cn(
-              "text-lg font-bold transition-all whitespace-nowrap",
-              "group-data-[collapsible=icon]:text-base"
-            )}>
-              {isCollapsed ? "B" : "Bloggen Chatbot"}
+          <div
+            className={cn(
+              'flex items-center justify-center rounded-lg bg-primary/10 transition-all px-2 py-1.5',
+              'group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0',
+            )}
+          >
+            <span
+              className={cn(
+                'text-lg font-bold transition-all whitespace-nowrap',
+                'group-data-[collapsible=icon]:text-base',
+              )}
+            >
+              {isCollapsed ? 'B' : 'Bloggen Chatbot'}
             </span>
           </div>
         </div>
 
         {/* Search - Show icon button when collapsed, input when expanded */}
-        <div className={cn(
-          "group-data-[collapsible=icon]:hidden"
-        )}>
+        <div className={cn('group-data-[collapsible=icon]:hidden')}>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <SidebarInput
@@ -330,14 +358,14 @@ export function ChatSidebar({ currentChatId }: Props) {
           onClick={() => {
             toggleSidebar();
             setTimeout(() => {
-              const searchInput = document.querySelector('[data-sidebar="input"]') as HTMLInputElement;
+              const searchInput = document.querySelector(
+                '[data-sidebar="input"]',
+              ) as HTMLInputElement;
               searchInput?.focus();
             }, 200);
           }}
           tooltip="Search"
-          className={cn(
-            "w-full hidden group-data-[collapsible=icon]:flex"
-          )}
+          className={cn('w-full hidden group-data-[collapsible=icon]:flex')}
         >
           <Search className="h-4 w-4" />
         </SidebarMenuButton>
@@ -356,9 +384,7 @@ export function ChatSidebar({ currentChatId }: Props) {
 
       <SidebarContent>
         {/* Hide all content when collapsed */}
-        <div className={cn(
-          "group-data-[collapsible=icon]:hidden"
-        )}>
+        <div className={cn('group-data-[collapsible=icon]:hidden')}>
           {/* Pinned Section */}
           {!isLoading && pinnedChats.length > 0 && (
             <SidebarGroup>
@@ -369,9 +395,7 @@ export function ChatSidebar({ currentChatId }: Props) {
                 </div>
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {pinnedChats.map(renderChatItem)}
-                </SidebarMenu>
+                <SidebarMenu>{pinnedChats.map(renderChatItem)}</SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           )}
@@ -400,27 +424,27 @@ export function ChatSidebar({ currentChatId }: Props) {
                   </div>
                 ) : (
                   <>
-                    {Object.entries(groupedChats).length > 0 ? (
-                      Object.entries(groupedChats).map(([month, monthChats]) => (
-                        <div key={month} className="mb-4">
-                          <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                            {month}
+                    {Object.entries(groupedChats).length > 0
+                      ? Object.entries(groupedChats).map(
+                          ([month, monthChats]) => (
+                            <div key={month} className="mb-4">
+                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                {month}
+                              </div>
+                              <SidebarMenu>
+                                {monthChats.map(renderChatItem)}
+                              </SidebarMenu>
+                            </div>
+                          ),
+                        )
+                      : !searchQuery && (
+                          <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>No chats yet</p>
+                            <p className="text-xs">Create one to get started</p>
                           </div>
-                          <SidebarMenu>
-                            {monthChats.map(renderChatItem)}
-                          </SidebarMenu>
-                        </div>
-                      ))
-                    ) : (
-                      !searchQuery && (
-                        <div className="px-2 py-8 text-center text-sm text-muted-foreground">
-                          <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p>No chats yet</p>
-                          <p className="text-xs">Create one to get started</p>
-                        </div>
-                      )
-                    )}
-                    
+                        )}
+
                     {searchQuery && Object.keys(groupedChats).length === 0 && (
                       <div className="px-2 py-8 text-center text-sm text-muted-foreground">
                         No chats found
@@ -432,29 +456,37 @@ export function ChatSidebar({ currentChatId }: Props) {
             )}
           </SidebarGroup>
         </div>
-
       </SidebarContent>
 
       <SidebarFooter className="p-2">
-        <div className={cn(
-          "flex items-center gap-2 w-full justify-between",
-          "group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center"
-        )}>
+        <div
+          className={cn(
+            'flex items-center gap-2 w-full justify-between',
+            'group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center',
+          )}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={cn(
-                "flex items-center gap-2 rounded-md p-1.5 hover:bg-sidebar-accent transition-colors",
-                "group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center"
-              )}>
+              <button
+                className={cn(
+                  'flex items-center gap-2 rounded-md p-1.5 hover:bg-sidebar-accent transition-colors',
+                  'group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center',
+                )}
+              >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name || 'User'} />
+                  <AvatarImage
+                    src={session?.user?.image || undefined}
+                    alt={session?.user?.name || 'User'}
+                  />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <span className={cn(
-                  "text-sm whitespace-nowrap group-data-[collapsible=icon]:hidden"
-                )}>
+                <span
+                  className={cn(
+                    'text-sm whitespace-nowrap group-data-[collapsible=icon]:hidden',
+                  )}
+                >
                   {session?.user?.name || 'User'}
                 </span>
               </button>
@@ -492,10 +524,12 @@ export function ChatSidebar({ currentChatId }: Props) {
           <SidebarMenuButton
             onClick={toggleSidebar}
             className={cn(
-              "h-8 w-8 p-0 transition-all",
-              "group-data-[collapsible=icon]:mt-2"
+              'h-8 w-8 p-0 transition-all',
+              'group-data-[collapsible=icon]:mt-2',
             )}
-            tooltip={state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'}
+            tooltip={
+              state === 'collapsed' ? 'Expand sidebar' : 'Collapse sidebar'
+            }
           >
             {isCollapsed ? (
               <ChevronsRight className="h-4 w-4" />

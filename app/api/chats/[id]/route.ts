@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import {
-  updateChatTitle,
-  deleteChat,
-  getMessagesByChatId,
-  dbMessagesToUIMessages,
-} from '@/lib/db/chat-queries';
-import {
   getAuthenticatedUserFromRequest,
-  verifyChatOwnership,
-  validateRequired,
   handleApiError,
   parseRouteParams,
+  validateRequired,
+  verifyChatOwnership,
 } from '@/lib/api/utils';
+import {
+  dbMessagesToUIMessages,
+  deleteChat,
+  getMessagesByChatId,
+  updateChatTitle,
+} from '@/lib/db/chat-queries';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,10 +22,10 @@ export async function GET(req: Request, context: RouteContext) {
   try {
     const user = await getAuthenticatedUserFromRequest(req);
     const { id } = await parseRouteParams(context.params);
-    
+
     const chat = await verifyChatOwnership(id, user.id);
     const dbMessages = await getMessagesByChatId(id);
-    
+
     // Convert DB messages to UIMessage format
     const messages = dbMessagesToUIMessages(dbMessages);
 
@@ -58,7 +58,7 @@ export async function DELETE(req: Request, context: RouteContext) {
   try {
     const user = await getAuthenticatedUserFromRequest(req);
     const { id } = await parseRouteParams(context.params);
-    
+
     await verifyChatOwnership(id, user.id);
     await deleteChat(id);
 

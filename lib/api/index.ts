@@ -4,9 +4,9 @@
  */
 
 export {
-	getAuthenticatedUserFromRequest,
-	verifyChatOwnership,
-	validateRequired,
-	handleApiError,
-	parseRouteParams,
+  getAuthenticatedUserFromRequest,
+  handleApiError,
+  parseRouteParams,
+  validateRequired,
+  verifyChatOwnership,
 } from './utils';

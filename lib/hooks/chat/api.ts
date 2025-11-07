@@ -46,7 +46,10 @@ export async function createChat(title: string): Promise<Chat> {
   };
 }
 
-export async function updateChatTitle(chatId: string, title: string): Promise<Chat> {
+export async function updateChatTitle(
+  chatId: string,
+  title: string,
+): Promise<Chat> {
   const response = await fetch(`/api/chats/${chatId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -72,7 +75,10 @@ export async function deleteChat(chatId: string): Promise<void> {
   }
 }
 
-export async function togglePinChat(chatId: string, pinned: boolean): Promise<Chat> {
+export async function togglePinChat(
+  chatId: string,
+  pinned: boolean,
+): Promise<Chat> {
   const response = await fetch(`/api/chats/${chatId}/pin`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -93,7 +99,7 @@ export async function togglePinChat(chatId: string, pinned: boolean): Promise<Ch
 export async function saveMessage(
   chatId: string,
   message: CreateMessagePayload,
-  customId?: string
+  customId?: string,
 ): Promise<UIMessage> {
   const response = await fetch(`/api/chats/${chatId}/messages`, {
     method: 'POST',
@@ -114,7 +120,7 @@ export async function updateMessage(
   chatId: string,
   messageId: string,
   content: string,
-  parts: any[]
+  parts: any[],
 ): Promise<UIMessage> {
   const response = await fetch(`/api/chats/${chatId}/messages/${messageId}`, {
     method: 'PATCH',
@@ -128,7 +134,10 @@ export async function updateMessage(
   return data.message;
 }
 
-export async function deleteMessage(chatId: string, messageId: string): Promise<void> {
+export async function deleteMessage(
+  chatId: string,
+  messageId: string,
+): Promise<void> {
   const response = await fetch(`/api/chats/${chatId}/messages/${messageId}`, {
     method: 'DELETE',
   });

@@ -1,9 +1,9 @@
-import { deleteMessagesAfter } from '@/lib/db/chat-queries';
 import {
   getAuthenticatedUserFromRequest,
-  verifyChatOwnership,
   handleApiError,
+  verifyChatOwnership,
 } from '@/lib/api/utils';
+import { deleteMessagesAfter } from '@/lib/db/chat-queries';
 
 /**
  * DELETE /api/chats/[id]/messages/[messageId]/after
@@ -11,7 +11,7 @@ import {
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string; messageId: string } }
+  { params }: { params: { id: string; messageId: string } },
 ) {
   try {
     const user = await getAuthenticatedUserFromRequest(req);

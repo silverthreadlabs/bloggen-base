@@ -1,8 +1,16 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import {
+  getAuthenticatedUserFromRequest,
+  handleApiError,
+} from '@/lib/api/utils';
+import {
+  createChat,
+  getChatById,
+  messageExistsById,
+  saveMessage,
+} from '@/lib/db/chat-queries';
 import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
-import { saveMessage, messageExistsById, createChat, getChatById } from '@/lib/db/chat-queries';
-import { getAuthenticatedUserFromRequest, handleApiError } from '@/lib/api/utils';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -23,12 +31,18 @@ export async function POST(req: Request) {
           status: 429,
           headers: {
             'Content-Type': 'application/json',
-            'X-RateLimit-Limit': getRateLimitConfig(rateLimitResult.role).limit.toString(),
+            'X-RateLimit-Limit': getRateLimitConfig(
+              rateLimitResult.role,
+            ).limit.toString(),
             'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
             'X-RateLimit-Reset': rateLimitResult.reset.toString(),
-            'Retry-After': rateLimitResult.reset > 0 
-              ? Math.max(0, Math.ceil((rateLimitResult.reset - Date.now()) / 1000)).toString()
-              : '0',
+            'Retry-After':
+              rateLimitResult.reset > 0
+                ? Math.max(
+                    0,
+                    Math.ceil((rateLimitResult.reset - Date.now()) / 1000),
+                  ).toString()
+                : '0',
           },
         },
       );
@@ -39,10 +53,14 @@ export async function POST(req: Request) {
     // Extract chatId from query params or body
     const url = new URL(req.url);
     let chatId = url.searchParams.get('chatId');
-    
+
     const body = await req.json();
-    const { messages, id, isRegenerate }: { messages: UIMessage[]; id?: string; isRegenerate?: boolean } = body;
-    
+    const {
+      messages,
+      id,
+      isRegenerate,
+    }: { messages: UIMessage[]; id?: string; isRegenerate?: boolean } = body;
+
     // If not in query, check body.id (from useChat id parameter)
     if (!chatId && id) {
       chatId = id;
@@ -51,27 +69,28 @@ export async function POST(req: Request) {
     // Vercel pattern: Check if chat exists, if not create it (auto-create on first message)
     if (chatId) {
       const existingChat = await getChatById(chatId);
-      
+
       if (!existingChat) {
         // Chat doesn't exist yet - create it now (seamless new chat pattern)
         console.log('[API] Creating new chat with ID:', chatId);
-        
+
         // Generate title from first user message (similar to Vercel)
-        const firstUserMessage = messages.find(m => m.role === 'user');
+        const firstUserMessage = messages.find((m) => m.role === 'user');
         let title = 'New Chat';
-        
+
         if (firstUserMessage) {
-          const textContent = firstUserMessage.parts
-            ?.filter((part: any) => part.type === 'text')
-            .map((part: any) => part.text)
-            .join('') || '';
-          
+          const textContent =
+            firstUserMessage.parts
+              ?.filter((part: any) => part.type === 'text')
+              .map((part: any) => part.text)
+              .join('') || '';
+
           // Use first 50 chars as title
           if (textContent.trim()) {
             title = textContent.slice(0, 50).trim();
           }
         }
-        
+
         // Create chat with generated ID (server-generated from /chat page)
         await createChat(user.id, title, chatId);
       }
@@ -89,20 +108,23 @@ export async function POST(req: Request) {
 
         // Check if this message ID already exists in the database
         // This prevents duplicates even if content is the same
-        console.log('[API] Checking if user message exists:', { 
-          messageId: lastMessage.id, 
-          content: content.substring(0, 50) + '...' 
+        console.log('[API] Checking if user message exists:', {
+          messageId: lastMessage.id,
+          content: content.substring(0, 50) + '...',
         });
-        
+
         messageExistsById(lastMessage.id)
-          .then(exists => {
-            console.log('[API] Message exists check result:', { 
-              messageId: lastMessage.id, 
-              exists 
+          .then((exists) => {
+            console.log('[API] Message exists check result:', {
+              messageId: lastMessage.id,
+              exists,
             });
-            
+
             if (!exists) {
-              console.log('[API] Saving new user message with ID:', lastMessage.id);
+              console.log(
+                '[API] Saving new user message with ID:',
+                lastMessage.id,
+              );
               // New message - save it with the AI SDK's ID
               return saveMessage(
                 chatId,
@@ -110,13 +132,17 @@ export async function POST(req: Request) {
                 content,
                 lastMessage.parts,
                 [],
-                lastMessage.id  // Use the AI SDK's message ID
+                lastMessage.id, // Use the AI SDK's message ID
               );
             } else {
-              console.log('[API] User message ID already exists in DB, skipping save (regeneration or duplicate)');
+              console.log(
+                '[API] User message ID already exists in DB, skipping save (regeneration or duplicate)',
+              );
             }
           })
-          .catch(error => console.error('Error checking/saving user message:', error));
+          .catch((error) =>
+            console.error('Error checking/saving user message:', error),
+          );
       }
     }
 
@@ -130,7 +156,10 @@ export async function POST(req: Request) {
     // Add rate limit headers to successful response
     const response = result.toUIMessageStreamResponse();
     const headers = new Headers(response.headers);
-    headers.set('X-RateLimit-Limit', getRateLimitConfig(rateLimitResult.role).limit.toString());
+    headers.set(
+      'X-RateLimit-Limit',
+      getRateLimitConfig(rateLimitResult.role).limit.toString(),
+    );
     headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
     headers.set('X-RateLimit-Reset', rateLimitResult.reset.toString());
 

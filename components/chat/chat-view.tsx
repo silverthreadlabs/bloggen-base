@@ -1,24 +1,26 @@
 'use client';
 
 import type { UIMessage } from '@ai-sdk/react';
-import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Loader } from '@/components/ai-elements/loader';
-import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
+import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+
+import { suggestions } from './chat-data';
 import { ChatHeader } from './chat-header';
+import { ChatInput } from './chat-input';
 import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
-import { ChatInput } from './chat-input';
-import { suggestions } from './chat-data';
 
 type Props = {
   messages: UIMessage[];
   status: 'submitted' | 'streaming' | 'ready' | 'error';
   isLoading: boolean;
+  isLoadingChat?: boolean;
   text: string;
   setText: (text: string) => void;
   useWebSearch: boolean;
@@ -44,6 +46,7 @@ export function ChatView({
   messages,
   status,
   isLoading,
+  isLoadingChat = false,
   text,
   setText,
   useWebSearch,
@@ -67,7 +70,7 @@ export function ChatView({
   const isNewChat = messages.length === 0 && !chatId;
 
   return (
-    <div className="relative flex size-full flex-col overflow-hidden w-full">
+    <div className="relative flex size-full w-full flex-col overflow-hidden">
       <ChatHeader
         title={chatTitle}
         chatId={chatId}
@@ -80,14 +83,23 @@ export function ChatView({
 
       <Conversation className="flex-1 overflow-y-auto">
         <ConversationContent>
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="w-full max-w-2xl mx-auto px-4">
+          {isLoadingChat ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="mx-auto w-full max-w-2xl px-4">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Loader />
+                  <span className="text-sm">Loading messages...</span>
+                </div>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="mx-auto w-full max-w-2xl px-4">
                 <EmptyState />
               </div>
             </div>
           ) : (
-            <div className="w-full max-w-4xl mx-auto px-4">
+            <div className="mx-auto w-full max-w-4xl px-4">
               <MessageList
                 messages={messages}
                 isLoading={isLoading}
@@ -102,7 +114,7 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="grid shrink-0 gap-4 border-t pt-4 bg-canvas-bg">
+      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4">
         {/* Suggestions commented out for now */}
         {/* <Suggestions className="px-4">
           {suggestions.map((suggestion) => (
@@ -114,7 +126,7 @@ export function ChatView({
           ))}
         </Suggestions> */}
 
-        <div className="w-full max-w-4xl mx-auto px-4 pb-4">
+        <div className="mx-auto w-full max-w-4xl px-4 pb-4">
           <ChatInput
             text={text}
             onTextChange={setText}
@@ -125,6 +137,7 @@ export function ChatView({
             status={status}
             onSubmit={onSubmit}
             onStop={onStop}
+            disabled={isLoadingChat}
           />
         </div>
       </div>

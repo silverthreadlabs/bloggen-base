@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { deleteMessage, saveMessage, updateMessage } from './api';
 import { chatKeys } from './query-keys';
-import { saveMessage, updateMessage, deleteMessage } from './api';
 import type { ChatWithMessages, CreateMessagePayload } from './types';
 
 /**
@@ -52,7 +52,7 @@ export function useUpdateMessage() {
       await queryClient.cancelQueries({ queryKey: chatKeys.detail(chatId) });
 
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
-        chatKeys.detail(chatId)
+        chatKeys.detail(chatId),
       );
 
       // Optimistically update message
@@ -60,7 +60,9 @@ export function useUpdateMessage() {
         queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(chatId), {
           ...previousChat,
           messages: previousChat.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, content, parts, isEdited: true } : msg
+            msg.id === messageId
+              ? { ...msg, content, parts, isEdited: true }
+              : msg,
           ),
         });
       }
@@ -87,13 +89,18 @@ export function useDeleteMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ chatId, messageId }: { chatId: string; messageId: string }) =>
-      deleteMessage(chatId, messageId),
+    mutationFn: ({
+      chatId,
+      messageId,
+    }: {
+      chatId: string;
+      messageId: string;
+    }) => deleteMessage(chatId, messageId),
     onMutate: async ({ chatId, messageId }) => {
       await queryClient.cancelQueries({ queryKey: chatKeys.detail(chatId) });
 
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
-        chatKeys.detail(chatId)
+        chatKeys.detail(chatId),
       );
 
       // Optimistically remove message
@@ -128,12 +135,12 @@ export function useRegenerateMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      chatId, 
-      messageId, 
-      deleteAction 
-    }: { 
-      chatId: string; 
+    mutationFn: async ({
+      chatId,
+      messageId,
+      deleteAction,
+    }: {
+      chatId: string;
       messageId: string;
       deleteAction: () => Promise<any>;
     }) => {
@@ -143,13 +150,15 @@ export function useRegenerateMessage() {
       await queryClient.cancelQueries({ queryKey: chatKeys.detail(chatId) });
 
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
-        chatKeys.detail(chatId)
+        chatKeys.detail(chatId),
       );
 
       // Optimistically remove message and all after it
       if (previousChat) {
-        const messageIndex = previousChat.messages.findIndex(m => m.id === messageId);
-        
+        const messageIndex = previousChat.messages.findIndex(
+          (m) => m.id === messageId,
+        );
+
         if (messageIndex !== -1) {
           queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(chatId), {
             ...previousChat,

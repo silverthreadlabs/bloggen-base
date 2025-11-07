@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import {
-  saveMessage,
-  getMessagesByChatId,
   getChatById,
+  getMessagesByChatId,
+  saveMessage,
 } from '@/lib/db/chat-queries';
 
 type RouteContext = {
@@ -39,7 +39,7 @@ export async function GET(req: Request, context: RouteContext) {
     console.error('Error fetching messages:', error);
     return NextResponse.json(
       { error: 'Failed to fetch messages' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -56,17 +56,25 @@ export async function POST(req: Request, context: RouteContext) {
     }
 
     const { id: chatId } = await context.params;
-    
+
     // Handle aborted requests gracefully
-    let body: { role: string; content: string; parts: any[]; attachments?: any[] };
+    let body: {
+      role: string;
+      content: string;
+      parts: any[];
+      attachments?: any[];
+    };
     try {
       body = await req.json();
     } catch (error) {
       // Request was aborted or body is empty
-      if (error instanceof Error && (error.message.includes('aborted') || error.message.includes('JSON'))) {
+      if (
+        error instanceof Error &&
+        (error.message.includes('aborted') || error.message.includes('JSON'))
+      ) {
         return NextResponse.json(
           { error: 'Request aborted or invalid' },
-          { status: 400 }
+          { status: 400 },
         );
       }
       throw error;
@@ -77,14 +85,14 @@ export async function POST(req: Request, context: RouteContext) {
     if (!role || !content) {
       return NextResponse.json(
         { error: 'Role and content are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (role !== 'user' && role !== 'assistant' && role !== 'system') {
       return NextResponse.json(
         { error: 'Invalid role. Must be user, assistant, or system' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,23 +112,20 @@ export async function POST(req: Request, context: RouteContext) {
       content,
       parts || [{ type: 'text', text: content }],
       attachments,
-      customId // Pass custom ID if provided (for AI SDK message IDs)
+      customId, // Pass custom ID if provided (for AI SDK message IDs)
     );
 
     return NextResponse.json({ message });
   } catch (error) {
     // Don't log aborted requests as errors
     if (error instanceof Error && error.message.includes('aborted')) {
-      return NextResponse.json(
-        { error: 'Request aborted' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Request aborted' }, { status: 400 });
     }
-    
+
     console.error('Error saving message:', error);
     return NextResponse.json(
       { error: 'Failed to save message' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

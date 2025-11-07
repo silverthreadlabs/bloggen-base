@@ -3,24 +3,24 @@
  * Promotes DRY principle and consistent error handling
  */
 
-import { auth } from "@/lib/auth/auth";
-import { getChatById } from "@/lib/db/chat-queries";
-import { ChatSDKError } from "@/lib/errors";
+import { auth } from '@/lib/auth/auth';
+import { getChatById } from '@/lib/db/chat-queries';
+import { ChatSDKError } from '@/lib/errors';
 
 /**
  * Get authenticated user from request
  * @throws ChatSDKError if not authenticated
  */
 export async function getAuthenticatedUserFromRequest(req: Request) {
-	const session = await auth.api.getSession({
-		headers: req.headers,
-	});
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
 
-	if (!session?.user?.id) {
-		throw new ChatSDKError("unauthorized:chat");
-	}
+  if (!session?.user?.id) {
+    throw new ChatSDKError('unauthorized:chat');
+  }
 
-	return session.user;
+  return session.user;
 }
 
 /**
@@ -28,17 +28,17 @@ export async function getAuthenticatedUserFromRequest(req: Request) {
  * @throws ChatSDKError if chat not found or forbidden
  */
 export async function verifyChatOwnership(chatId: string, userId: string) {
-	const chat = await getChatById(chatId);
+  const chat = await getChatById(chatId);
 
-	if (!chat) {
-		throw new ChatSDKError("not_found:chat");
-	}
+  if (!chat) {
+    throw new ChatSDKError('not_found:chat');
+  }
 
-	if (chat.userId !== userId) {
-		throw new ChatSDKError("forbidden:chat");
-	}
+  if (chat.userId !== userId) {
+    throw new ChatSDKError('forbidden:chat');
+  }
 
-	return chat;
+  return chat;
 }
 
 /**
@@ -46,18 +46,21 @@ export async function verifyChatOwnership(chatId: string, userId: string) {
  * @throws ChatSDKError if validation fails
  */
 export function validateRequired<T extends Record<string, any>>(
-	data: T,
-	fields: Array<keyof T>,
-	errorMessage?: string
+  data: T,
+  fields: Array<keyof T>,
+  errorMessage?: string,
 ): void {
-	for (const field of fields) {
-		if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
-			throw new ChatSDKError(
-				"bad_request:chat",
-				errorMessage || `${String(field)} is required`
-			);
-		}
-	}
+  for (const field of fields) {
+    if (
+      !data[field] ||
+      (typeof data[field] === 'string' && !data[field].trim())
+    ) {
+      throw new ChatSDKError(
+        'bad_request:chat',
+        errorMessage || `${String(field)} is required`,
+      );
+    }
+  }
 }
 
 /**
@@ -65,27 +68,25 @@ export function validateRequired<T extends Record<string, any>>(
  * Returns proper Response object based on error type
  */
 export function handleApiError(error: unknown, context?: string): Response {
-	if (context) {
-		console.error(`${context}:`, error);
-	} else {
-		console.error("API Error:", error);
-	}
+  if (context) {
+    console.error(`${context}:`, error);
+  } else {
+    console.error('API Error:', error);
+  }
 
-	if (error instanceof ChatSDKError) {
-		return error.toResponse();
-	}
+  if (error instanceof ChatSDKError) {
+    return error.toResponse();
+  }
 
-	return new ChatSDKError(
-		"bad_request:database",
-		"An unexpected error occurred"
-	).toResponse();
+  return new ChatSDKError(
+    'bad_request:database',
+    'An unexpected error occurred',
+  ).toResponse();
 }
 
 /**
  * Parse route params safely (for Next.js 15 async params)
  */
-export async function parseRouteParams<T>(
-	params: Promise<T>
-): Promise<T> {
-	return await params;
+export async function parseRouteParams<T>(params: Promise<T>): Promise<T> {
+  return await params;
 }

@@ -1,9 +1,9 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { useParams } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { ChatSidebar } from './chat-sidebar';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export function ChatLayoutClient({ children }: { children: ReactNode }) {
   const params = useParams();

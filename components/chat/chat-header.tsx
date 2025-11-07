@@ -1,5 +1,5 @@
+import { MoreVertical, Pin, Share2, SquarePen, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SquarePen, Share2, MoreVertical, Pin, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,28 +17,30 @@ type ChatHeaderProps = {
   onUpdateTitle?: (title: string) => void;
 };
 
-export function ChatHeader({ 
-  title = 'New Chat', 
+export function ChatHeader({
+  title = 'New Chat',
   chatId,
   pinned = false,
   onNewChatAction,
   onDeleteChat,
   onPinChat,
-  onUpdateTitle 
+  onUpdateTitle,
 }: ChatHeaderProps) {
   // If chatId exists, it's not a new chat (regardless of title)
   // Title might be "New Chat" temporarily even after chat is created
   const isNewChat = !chatId;
-  
+
   const handleShare = () => {
     if (chatId && navigator.share) {
-      navigator.share({
-        title: title,
-        url: window.location.href,
-      }).catch(() => {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(window.location.href);
-      });
+      navigator
+        .share({
+          title: title,
+          url: window.location.href,
+        })
+        .catch(() => {
+          // Fallback: copy to clipboard
+          navigator.clipboard.writeText(window.location.href);
+        });
     } else if (chatId) {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
@@ -62,9 +64,7 @@ export function ChatHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 {onPinChat && (
-                  <DropdownMenuItem
-                    onClick={() => onPinChat(!pinned)}
-                  >
+                  <DropdownMenuItem onClick={() => onPinChat(!pinned)}>
                     <Pin className="h-4 w-4 mr-2" />
                     {pinned ? 'Unpin' : 'Pin'}
                   </DropdownMenuItem>
@@ -80,10 +80,10 @@ export function ChatHeader({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleShare}
               className="h-8 gap-2"
             >
@@ -94,9 +94,9 @@ export function ChatHeader({
         )}
 
         {isNewChat ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onNewChatAction}
             className="h-8 gap-2"
           >
@@ -104,9 +104,9 @@ export function ChatHeader({
             <span>New Chat</span>
           </Button>
         ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onNewChatAction}
             className="h-8 w-8 p-0"
           >

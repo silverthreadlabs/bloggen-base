@@ -11,11 +11,9 @@ export function isLastAssistantMessage(
   message: UIMessage,
   index: number,
   messages: UIMessage[],
-  isLoading: boolean
+  isLoading: boolean,
 ): boolean {
   return (
-    message.role === 'assistant' &&
-    index === messages.length - 1 &&
-    !isLoading
+    message.role === 'assistant' && index === messages.length - 1 && !isLoading
   );
 }

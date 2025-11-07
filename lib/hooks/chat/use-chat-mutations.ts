@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { createChat, deleteChat, togglePinChat, updateChatTitle } from './api';
 import { chatKeys } from './query-keys';
-import { createChat, updateChatTitle, deleteChat, togglePinChat } from './api';
 import type { Chat, ChatWithMessages } from './types';
 
 /**
@@ -20,7 +20,7 @@ export function useCreateChat() {
         if (!old) return [newChat];
         return [newChat, ...old];
       });
-      
+
       // Optimistically set chat detail query data with empty messages
       // This prevents "Loading chat..." from showing when navigating to the new chat
       queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(newChat.id), {
@@ -50,7 +50,7 @@ export function useUpdateChatTitle() {
 
       // Snapshot the previous values
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
-        chatKeys.detail(chatId)
+        chatKeys.detail(chatId),
       );
       const previousChats = queryClient.getQueryData<Chat[]>(chatKeys.list());
 
@@ -67,8 +67,8 @@ export function useUpdateChatTitle() {
         queryClient.setQueryData<Chat[]>(
           chatKeys.list(),
           previousChats.map((chat) =>
-            chat.id === chatId ? { ...chat, title } : chat
-          )
+            chat.id === chatId ? { ...chat, title } : chat,
+          ),
         );
       }
 
@@ -109,7 +109,7 @@ export function useDeleteChat() {
       if (previousChats) {
         queryClient.setQueryData<Chat[]>(
           chatKeys.list(),
-          previousChats.filter((chat) => chat.id !== chatId)
+          previousChats.filter((chat) => chat.id !== chatId),
         );
       }
 
@@ -147,7 +147,7 @@ export function useTogglePinChat() {
 
       const previousChats = queryClient.getQueryData<Chat[]>(chatKeys.list());
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
-        chatKeys.detail(chatId)
+        chatKeys.detail(chatId),
       );
 
       // Optimistically update chat list
@@ -155,8 +155,8 @@ export function useTogglePinChat() {
         queryClient.setQueryData<Chat[]>(
           chatKeys.list(),
           previousChats.map((chat) =>
-            chat.id === chatId ? { ...chat, pinned } : chat
-          )
+            chat.id === chatId ? { ...chat, pinned } : chat,
+          ),
         );
       }
 

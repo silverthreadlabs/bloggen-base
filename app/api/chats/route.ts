@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import {
-  createChat,
-  getChatsByUserId,
-} from '@/lib/db/chat-queries';
-import {
   getAuthenticatedUserFromRequest,
-  validateRequired,
   handleApiError,
+  validateRequired,
 } from '@/lib/api/utils';
+import { createChat, getChatsByUserId } from '@/lib/db/chat-queries';
 
 // GET /api/chats - Get all chats for user
 export async function GET(req: Request) {

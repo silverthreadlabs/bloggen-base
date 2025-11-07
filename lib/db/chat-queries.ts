@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { eq, desc, and, gte, inArray, sql } from 'drizzle-orm';
+import type { UIMessage } from '@ai-sdk/react';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import type { UIMessage } from '@ai-sdk/react';
-import { chat, message, vote, type DBMessage } from './schema';
+import { chat, type DBMessage, message, vote } from './schema';
 
 if (!process.env.DB_CONNECTION_STRING) {
   throw new Error('DB_CONNECTION_STRING environment variable is not set');
@@ -17,22 +17,23 @@ const db = drizzle(client);
 // CHAT OPERATIONS
 // ============================================================================
 
-export async function createChat(userId: string, title: string, chatId?: string) {
+export async function createChat(
+  userId: string,
+  title: string,
+  chatId?: string,
+) {
   const values: any = {
     userId,
     title,
     visibility: 'private',
   };
-  
+
   // If custom chatId provided (from server-side generation), use it
   if (chatId) {
     values.id = chatId;
   }
-  
-  const [newChat] = await db
-    .insert(chat)
-    .values(values)
-    .returning();
+
+  const [newChat] = await db.insert(chat).values(values).returning();
 
   return newChat;
 }
@@ -60,7 +61,7 @@ export async function getChatsByUserId(userId: string) {
 export async function updateChatTitle(chatId: string, title: string) {
   const [updated] = await db
     .update(chat)
-    .set({ 
+    .set({
       title,
       updatedAt: new Date(),
     })
@@ -78,7 +79,7 @@ export async function deleteChat(chatId: string) {
 export async function togglePinChat(chatId: string, pinned: boolean) {
   const [updated] = await db
     .update(chat)
-    .set({ 
+    .set({
       pinned,
       updatedAt: new Date(),
     })
@@ -98,7 +99,7 @@ export async function saveMessage(
   content: string,
   parts: any[],
   attachments: any[] = [],
-  customId?: string  // Optional: use custom ID instead of auto-generated
+  customId?: string, // Optional: use custom ID instead of auto-generated
 ) {
   const messageData: any = {
     chatId,
@@ -113,10 +114,7 @@ export async function saveMessage(
     messageData.id = customId;
   }
 
-  const [newMessage] = await db
-    .insert(message)
-    .values(messageData)
-    .returning();
+  const [newMessage] = await db.insert(message).values(messageData).returning();
 
   // Update chat's updatedAt timestamp
   await db
@@ -154,7 +152,11 @@ export async function getMessage(messageId: string) {
  * Check if a message with the same content already exists in the chat
  * Used to prevent duplicate saves during regeneration
  */
-export async function messageExists(chatId: string, role: 'user' | 'assistant', content: string) {
+export async function messageExists(
+  chatId: string,
+  role: 'user' | 'assistant',
+  content: string,
+) {
   const [existing] = await db
     .select()
     .from(message)
@@ -162,8 +164,8 @@ export async function messageExists(chatId: string, role: 'user' | 'assistant', 
       and(
         eq(message.chatId, chatId),
         eq(message.role, role),
-        eq(message.content, content)
-      )
+        eq(message.content, content),
+      ),
     )
     .limit(1);
 
@@ -187,7 +189,7 @@ export async function messageExistsById(messageId: string) {
 export async function updateMessage(
   messageId: string,
   content: string,
-  parts: any[]
+  parts: any[],
 ) {
   const [updated] = await db
     .update(message)
@@ -230,8 +232,8 @@ export async function deleteMessagesAfter(chatId: string, messageId: string) {
     .where(
       and(
         eq(message.chatId, chatId),
-        gte(message.createdAt, targetMessage.createdAt)
-      )
+        gte(message.createdAt, targetMessage.createdAt),
+      ),
     );
 
   const messageIds = messagesToDelete.map((m) => m.id);
@@ -243,12 +245,7 @@ export async function deleteMessagesAfter(chatId: string, messageId: string) {
   if (messageIds.length > 0) {
     await db
       .delete(vote)
-      .where(
-        and(
-          eq(vote.chatId, chatId),
-          inArray(vote.messageId, messageIds)
-        )
-      );
+      .where(and(eq(vote.chatId, chatId), inArray(vote.messageId, messageIds)));
   }
 
   // Now delete the messages
@@ -257,8 +254,8 @@ export async function deleteMessagesAfter(chatId: string, messageId: string) {
     .where(
       and(
         eq(message.chatId, chatId),
-        gte(message.createdAt, targetMessage.createdAt)
-      )
+        gte(message.createdAt, targetMessage.createdAt),
+      ),
     );
 }
 

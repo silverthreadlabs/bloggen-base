@@ -1,23 +1,23 @@
 'use client';
 
+import { GlobeIcon, MicIcon } from 'lucide-react';
 import {
   PromptInput,
-  PromptInputBody,
-  PromptInputTextarea,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTools,
-  PromptInputButton,
-  PromptInputActionMenu,
-  PromptInputActionMenuTrigger,
-  PromptInputActionMenuContent,
   PromptInputActionAddAttachments,
-  PromptInputHeader,
-  PromptInputAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
   PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
   type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
-import { GlobeIcon, MicIcon } from 'lucide-react';
 
 type Props = {
   text: string;
@@ -29,6 +29,7 @@ type Props = {
   status: 'submitted' | 'streaming' | 'ready' | 'error';
   onSubmit: (message: PromptInputMessage) => void;
   onStop: () => void;
+  disabled?: boolean;
 };
 
 export function ChatInput({
@@ -41,6 +42,7 @@ export function ChatInput({
   status,
   onSubmit,
   onStop,
+  disabled = false,
 }: Props) {
   return (
     <PromptInput globalDrop multiple onSubmit={onSubmit}>
@@ -53,6 +55,7 @@ export function ChatInput({
         <PromptInputTextarea
           onChange={(event) => onTextChange(event.target.value)}
           value={text}
+          disabled={disabled}
         />
       </PromptInputBody>
       <PromptInputFooter>
@@ -66,6 +69,7 @@ export function ChatInput({
           <PromptInputButton
             onClick={() => onMicrophoneChange(!useMicrophone)}
             variant={useMicrophone ? 'solid' : 'ghost'}
+            disabled={disabled}
           >
             <MicIcon size={16} />
             <span className="sr-only">Microphone</span>
@@ -73,13 +77,14 @@ export function ChatInput({
           <PromptInputButton
             onClick={() => onWebSearchChange(!useWebSearch)}
             variant={useWebSearch ? 'solid' : 'ghost'}
+            disabled={disabled}
           >
             <GlobeIcon size={16} />
             <span>Search</span>
           </PromptInputButton>
         </PromptInputTools>
         <PromptInputSubmit
-          disabled={!(text.trim() || status)}
+          disabled={disabled || !(text.trim() || status)}
           status={status}
           onClick={(e) => {
             if (status === 'streaming') {

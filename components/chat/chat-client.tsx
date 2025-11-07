@@ -2,51 +2,51 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useState, useCallback } from 'react';
+import {
+  CheckIcon,
+  CopyIcon,
+  GlobeIcon,
+  MicIcon,
+  RefreshCwIcon,
+  Trash2Icon,
+} from 'lucide-react';
+import { nanoid } from 'nanoid';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
+import { Action, Actions } from '@/components/ai-elements/actions';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
-import { Message, MessageContent } from '@/components/ai-elements/message';
-import { Response } from '@/components/ai-elements/response';
 import { Loader } from '@/components/ai-elements/loader';
-import { Actions, Action } from '@/components/ai-elements/actions';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   PromptInput,
-  PromptInputBody,
-  PromptInputTextarea,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTools,
-  PromptInputButton,
-  type PromptInputMessage,
-  PromptInputActionMenu,
-  PromptInputActionMenuTrigger,
-  PromptInputActionMenuContent,
   PromptInputActionAddAttachments,
-  PromptInputHeader,
-  PromptInputAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
   PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
+  type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
-import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
-import {
-  CopyIcon,
-  CheckIcon,
-  RefreshCwIcon,
-  Trash2Icon,
-  GlobeIcon,
-  MicIcon,
-} from 'lucide-react';
-import { nanoid } from 'nanoid';
-import { toast } from 'sonner';
-import { useChatActions } from './hooks/use-chat-actions';
-import { isLastAssistantMessage } from './utils/message-utils';
-import { MessageAvatar } from './message-avatar';
+import { Response } from '@/components/ai-elements/response';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { hardcodedMessages, mockResponses, suggestions } from './chat-data';
 import { ChatHeader } from './chat-header';
 import { EmptyState } from './empty-state';
+import { useChatActions } from './hooks/use-chat-actions';
+import { MessageAvatar } from './message-avatar';
 import type { HardcodedMessageType } from './types';
-import { hardcodedMessages, suggestions, mockResponses } from './chat-data';
+import { isLastAssistantMessage } from './utils/message-utils';
 
 // ============================================================================
 // TOGGLE BETWEEN HARDCODED AND REAL MESSAGES
@@ -83,7 +83,7 @@ export default function ChatClient({ session }: Props) {
     'submitted' | 'streaming' | 'ready' | 'error'
   >('ready');
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
-    null
+    null,
   );
   const [streamingAbortController, setStreamingAbortController] =
     useState<AbortController | null>(null);
@@ -120,12 +120,12 @@ export default function ChatClient({ session }: Props) {
 
           setHardMessages((prev) =>
             prev.map((msg) =>
-              msg.key === messageId ? { ...msg, content: currentContent } : msg
-            )
+              msg.key === messageId ? { ...msg, content: currentContent } : msg,
+            ),
           );
 
           await new Promise((resolve) =>
-            setTimeout(resolve, Math.random() * 100 + 50)
+            setTimeout(resolve, Math.random() * 100 + 50),
           );
         }
       } catch (error) {
@@ -136,7 +136,7 @@ export default function ChatClient({ session }: Props) {
         setStreamingAbortController(null);
       }
     },
-    []
+    [],
   );
 
   const addHardcodedMessage = useCallback(
@@ -168,7 +168,7 @@ export default function ChatClient({ session }: Props) {
         streamResponse(assistantMessageId, randomResponse);
       }, 500);
     },
-    [streamResponse, session]
+    [streamResponse, session],
   );
 
   // ============================================================================
@@ -253,129 +253,129 @@ export default function ChatClient({ session }: Props) {
           <EmptyState />
         ) : (
           <ConversationContent>
-          {USE_HARDCODED_MESSAGES
-            ? // HARDCODED MESSAGES RENDER
-              hardMessages.map((message, index) => {
-                const isLastAssistant =
-                  message.from === 'assistant' &&
-                  index === hardMessages.length - 1 &&
-                  !isLoading;
+            {USE_HARDCODED_MESSAGES
+              ? // HARDCODED MESSAGES RENDER
+                hardMessages.map((message, index) => {
+                  const isLastAssistant =
+                    message.from === 'assistant' &&
+                    index === hardMessages.length - 1 &&
+                    !isLoading;
 
-                return (
-                  <Message key={message.key} from={message.from}>
-                    <div>
-                      <MessageContent>
-                        <Response>{message.content}</Response>
-                      </MessageContent>
-                      <Actions className="mt-2">
-                        <Action
-                          tooltip="Copy"
-                          onClick={() =>
-                            handleCopy(message.key, message.content)
-                          }
-                        >
-                          {copiedId === message.key ? (
-                            <CheckIcon className="size-3" />
-                          ) : (
-                            <CopyIcon className="size-3" />
-                          )}
-                        </Action>
-
-                        {message.from === 'assistant' && isLastAssistant && (
+                  return (
+                    <Message key={message.key} from={message.from}>
+                      <div>
+                        <MessageContent>
+                          <Response>{message.content}</Response>
+                        </MessageContent>
+                        <Actions className="mt-2">
                           <Action
-                            tooltip="Regenerate"
+                            tooltip="Copy"
                             onClick={() =>
-                              streamResponse(
-                                message.key,
-                                mockResponses[
-                                  Math.floor(
-                                    Math.random() * mockResponses.length
-                                  )
-                                ]
-                              )
+                              handleCopy(message.key, message.content)
                             }
                           >
-                            <RefreshCwIcon className="size-3" />
+                            {copiedId === message.key ? (
+                              <CheckIcon className="size-3" />
+                            ) : (
+                              <CopyIcon className="size-3" />
+                            )}
                           </Action>
-                        )}
 
-                        {message.from === 'user' && (
-                          <Action
-                            tooltip="Delete"
-                            onClick={() => handleDelete(message.key)}
-                          >
-                            <Trash2Icon className="size-3" />
-                          </Action>
-                        )}
-                      </Actions>
-                    </div>
-                    <MessageAvatar
-                      role={message.from}
-                      userName={message.name}
-                    />
-                  </Message>
-                );
-              })
-            : // REAL MESSAGES RENDER
-              realMessages.map((message, index) => {
-                const messageText = message.parts
-                  .filter((part) => part.type === 'text')
-                  .map((part) => (part.type === 'text' ? part.text : ''))
-                  .join('');
-
-                const isLastAssistant = isLastAssistantMessage(
-                  message,
-                  index,
-                  realMessages,
-                  isLoading
-                );
-
-                return (
-                  <Message key={message.id} from={message.role}>
-                    <div>
-                      <MessageContent>
-                        <Response>{messageText}</Response>
-                      </MessageContent>
-                      <Actions className="mt-2">
-                        <Action
-                          tooltip="Copy"
-                          onClick={() => handleCopy(message.id, messageText)}
-                        >
-                          {copiedId === message.id ? (
-                            <CheckIcon className="size-3" />
-                          ) : (
-                            <CopyIcon className="size-3" />
+                          {message.from === 'assistant' && isLastAssistant && (
+                            <Action
+                              tooltip="Regenerate"
+                              onClick={() =>
+                                streamResponse(
+                                  message.key,
+                                  mockResponses[
+                                    Math.floor(
+                                      Math.random() * mockResponses.length,
+                                    )
+                                  ],
+                                )
+                              }
+                            >
+                              <RefreshCwIcon className="size-3" />
+                            </Action>
                           )}
-                        </Action>
 
-                        {message.role === 'assistant' && isLastAssistant && (
+                          {message.from === 'user' && (
+                            <Action
+                              tooltip="Delete"
+                              onClick={() => handleDelete(message.key)}
+                            >
+                              <Trash2Icon className="size-3" />
+                            </Action>
+                          )}
+                        </Actions>
+                      </div>
+                      <MessageAvatar
+                        role={message.from}
+                        userName={message.name}
+                      />
+                    </Message>
+                  );
+                })
+              : // REAL MESSAGES RENDER
+                realMessages.map((message, index) => {
+                  const messageText = message.parts
+                    .filter((part) => part.type === 'text')
+                    .map((part) => (part.type === 'text' ? part.text : ''))
+                    .join('');
+
+                  const isLastAssistant = isLastAssistantMessage(
+                    message,
+                    index,
+                    realMessages,
+                    isLoading,
+                  );
+
+                  return (
+                    <Message key={message.id} from={message.role}>
+                      <div>
+                        <MessageContent>
+                          <Response>{messageText}</Response>
+                        </MessageContent>
+                        <Actions className="mt-2">
                           <Action
-                            tooltip="Regenerate"
-                            onClick={() => regenerate()}
+                            tooltip="Copy"
+                            onClick={() => handleCopy(message.id, messageText)}
                           >
-                            <RefreshCwIcon className="size-3" />
+                            {copiedId === message.id ? (
+                              <CheckIcon className="size-3" />
+                            ) : (
+                              <CopyIcon className="size-3" />
+                            )}
                           </Action>
-                        )}
 
-                        {message.role === 'user' && (
-                          <Action
-                            tooltip="Delete"
-                            onClick={() => handleDelete(message.id)}
-                          >
-                            <Trash2Icon className="size-3" />
-                          </Action>
-                        )}
-                      </Actions>
-                    </div>
-                    <MessageAvatar
-                      role={message.role as 'user' | 'assistant'}
-                      userName={session?.user?.name ?? undefined}
-                    />
-                  </Message>
-                );
-              })}
+                          {message.role === 'assistant' && isLastAssistant && (
+                            <Action
+                              tooltip="Regenerate"
+                              onClick={() => regenerate()}
+                            >
+                              <RefreshCwIcon className="size-3" />
+                            </Action>
+                          )}
 
-          {status === 'submitted' && <Loader />}
+                          {message.role === 'user' && (
+                            <Action
+                              tooltip="Delete"
+                              onClick={() => handleDelete(message.id)}
+                            >
+                              <Trash2Icon className="size-3" />
+                            </Action>
+                          )}
+                        </Actions>
+                      </div>
+                      <MessageAvatar
+                        role={message.role as 'user' | 'assistant'}
+                        userName={session?.user?.name ?? undefined}
+                      />
+                    </Message>
+                  );
+                })}
+
+            {status === 'submitted' && <Loader />}
           </ConversationContent>
         )}
         <ConversationScrollButton />
