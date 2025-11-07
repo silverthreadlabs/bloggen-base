@@ -29,7 +29,6 @@ export function ChatInterface({ chatId, initialChat }: Props) {
 
   const { data: allChats } = useChats();
   const { data: chatData } = useChatQuery(chatId);
-  
   const chatOps = useChatOperations(chatId);
   const messageOps = useMessageOperations(chatId);
   const togglePin = useToggleChatPin();
@@ -83,7 +82,7 @@ export function ChatInterface({ chatId, initialChat }: Props) {
       messageOps.invalidateChat();
     },
   });
-  
+
   const isLoading = status === 'submitted' || status === 'streaming';
 
   const handleSubmit = useCallback(async (message: PromptInputMessage) => {

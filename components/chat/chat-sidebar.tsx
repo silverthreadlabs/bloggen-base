@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useChats, useCreateChat, useDeleteChat, useUpdateChatTitle } from '@/lib/hooks/chat';
+import { useChats, useCreateChat, useDeleteChat, useUpdateChatTitle, chatKeys, fetchChat } from '@/lib/hooks/chat';
 import { useToggleChatPin, useChatPinStore } from '@/lib/stores/chat-pin-store';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -120,6 +120,19 @@ export function ChatSidebar({ currentChatId }: Props) {
     router.push('/chat');
   }, [router]);
 
+  const handleSelectChat = useCallback(async (chatId: string) => {
+    try {
+      await queryClient.ensureQueryData({
+        queryKey: chatKeys.detail(chatId),
+        queryFn: () => fetchChat(chatId),
+      });
+    } catch (error) {
+      console.error('Failed to prefetch chat', error);
+    } finally {
+      router.replace(`/chat/${chatId}`);
+    }
+  }, [queryClient, router]);
+
   const handleDeleteChat = useCallback((chatId: string) => {
     if (!confirm('Delete this chat?')) return;
 
@@ -214,7 +227,7 @@ export function ChatSidebar({ currentChatId }: Props) {
       <SidebarMenuItem key={chat.id}>
         <SidebarMenuButton
           isActive={isActive}
-          onClick={() => router.replace(`/chat/${chat.id}`)}
+          onClick={() => void handleSelectChat(chat.id)}
           className="group/menu-item"
         >
           {isEditing ? (
