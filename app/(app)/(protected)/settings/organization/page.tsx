@@ -1,4 +1,4 @@
-import { CreditCard, Settings, Shield, User, Users } from 'lucide-react';
+import { Shield, User, Users } from 'lucide-react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Sidebar from '@/components/settings/components/sidebar';

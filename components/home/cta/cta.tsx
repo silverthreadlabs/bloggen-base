@@ -3,8 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import React from 'react';
-import { FaArrowRight, FaGithub, FaRocket } from 'react-icons/fa';
-import { HiLightningBolt, HiSparkles } from 'react-icons/hi';
+import { FaArrowRight, FaGithub } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 
 export default function Cta() {

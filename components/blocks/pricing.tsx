@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { client } from '@/lib/auth/auth-client';

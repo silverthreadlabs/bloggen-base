@@ -2,12 +2,8 @@
 
 import { motion } from 'framer-motion';
 
-import Link from 'next/link';
 import React from 'react';
-import { FaArrowRight, FaCheck, FaGithub, FaRocket } from 'react-icons/fa';
-import { HiLightningBolt, HiSparkles } from 'react-icons/hi';
 import { Pricing } from '@/components/blocks/pricing';
-import { Button } from '@/components/ui/button';
 
 const demoPlans = [
   {

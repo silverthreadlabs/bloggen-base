@@ -2,7 +2,7 @@ import Banner from '@/components/layout/banner/banner';
 import Footer from '@/components/layout/footer/footer';
 import Header from '@/components/layout/header/header';
 
-import '../global.css';
+import '../../global.css';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth/auth';
 import type { Session } from '@/lib/auth/auth-types';

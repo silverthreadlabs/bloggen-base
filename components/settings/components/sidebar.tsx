@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import React, { useState } from 'react';
 import { FiArrowRight } from 'react-icons/fi';
 import { Button } from '../../ui/button';

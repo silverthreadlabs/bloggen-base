@@ -11,7 +11,6 @@ import { createPageMetadata } from '@/lib/seo/metadata/create-page-metadata';
 import ProductsSchema from '@/lib/seo/schema/products';
 import ProductPostSchema from '@/lib/seo/schema/products-posting';
 import { productSource, source } from '@/lib/source';
-import { getURL } from '@/lib/utils/url';
 import { getMDXComponents } from '@/mdx-components';
 
 export default async function Page(props: {

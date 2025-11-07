@@ -13,11 +13,9 @@ import {
   Monitor,
   Plus,
   QrCode,
-  Settings,
   ShieldCheck,
   ShieldOff,
   StopCircle,
-  Trash,
   User,
   X,
 } from 'lucide-react';
@@ -53,14 +51,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { client, signOut, useSession } from '@/lib/auth/auth-client';
 import type { Session } from '@/lib/auth/auth-types';
 import { Component } from './change-plan';

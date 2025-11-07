@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { getPageTreePeers } from 'fumadocs-core/server';
 import * as Twoslash from 'fumadocs-twoslash/ui';
 import { createGenerator } from 'fumadocs-typescript';
@@ -20,17 +21,9 @@ import {
   PageTOCPopoverTrigger,
   PageTOCTitle,
 } from 'fumadocs-ui/layouts/docs/page';
-import Mdx, { createRelativeLink } from 'fumadocs-ui/mdx';
-import {
-  DocsBody,
-  DocsDescription,
-  DocsPage,
-  DocsTitle,
-} from 'fumadocs-ui/page';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import path from 'path';
-import type { ComponentProps, FC, ReactElement, ReactNode } from 'react';
+import type { ComponentProps, FC } from 'react';
 import { Rate } from '@/components/rate';
 import {
   HoverCard,
@@ -40,7 +33,7 @@ import {
 import { Mermaid } from '@/components/ui/mermaid';
 import { Wrapper } from '@/components/ui/wrapper';
 import { UiOverview } from '@/components/ui-overview';
-import { onRateAction, owner, repo } from '@/lib/github';
+import { onRateAction } from '@/lib/github';
 import { source } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 
