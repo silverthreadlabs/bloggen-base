@@ -65,7 +65,7 @@
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import * as React from 'react';
-import { Input, type InputProps } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 // "use client";
