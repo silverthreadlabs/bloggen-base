@@ -11,13 +11,6 @@ export {
   updateChatTitle,
   updateMessage,
 } from './api';
-// Component Hooks (for chat UI components)
-export {
-  useChatActions,
-  useChatOperations,
-  useChatSync,
-  useMessageOperations,
-} from './component-hooks';
 // Query Keys
 export { chatKeys } from './query-keys';
 export type { Chat, ChatWithMessages, CreateMessagePayload } from './types';
@@ -37,3 +30,11 @@ export {
   useSaveMessage,
   useUpdateMessage,
 } from './use-message-mutations';
+
+// Component Hooks (for chat UI components)
+export {
+  useChatActions,
+  useChatOperations,
+  useChatSync,
+  useMessageOperations,
+} from './component-hooks';
