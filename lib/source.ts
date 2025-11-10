@@ -1,5 +1,6 @@
-import { loader } from 'fumadocs-core/source';
-import { createMDXSource } from 'fumadocs-mdx';
+import { type InferPageType, loader } from 'fumadocs-core/source';
+import { createMDXSource } from 'fumadocs-mdx/runtime/next';
+// import { createMDX } from 'fumadocs-mdx/next';
 import { blog, docs, products } from '@/.source';
 
 // See https://fumadocs.vercel.app/docs/headless/source-api for more info

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { getPageTreePeers } from 'fumadocs-core/server';
+import { getPageTreePeers } from 'fumadocs-core/page-tree';
 import * as Twoslash from 'fumadocs-twoslash/ui';
 import { createGenerator } from 'fumadocs-typescript';
 import { AutoTypeTable } from 'fumadocs-typescript/ui';
