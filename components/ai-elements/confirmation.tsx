@@ -11,9 +11,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+type ToolState =
+  | ToolUIPart['state']
+  | 'approval-requested'
+  | 'approval-responded'
+  | 'output-denied';
+
+type ToolApproval = {
+  id: string;
+  approved?: boolean;
+  reason?: string;
+};
+
 type ConfirmationContextValue = {
-  approval: ToolUIPart['approval'];
-  state: ToolUIPart['state'];
+  approval?: ToolApproval;
+  state: ToolState;
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
@@ -31,8 +43,8 @@ const useConfirmation = () => {
 };
 
 export type ConfirmationProps = ComponentProps<typeof Alert> & {
-  approval?: ToolUIPart['approval'];
-  state: ToolUIPart['state'];
+  approval?: ToolApproval;
+  state: ToolState;
 };
 
 export const Confirmation = ({

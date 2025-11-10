@@ -125,7 +125,7 @@ export const QueueItemAction = ({
       'size-auto rounded p-1 text-canvas-text opacity-0 transition-opacity hover:bg-canvas-text/10 hover:text-canvas-text-contrast group-hover:opacity-100',
       className,
     )}
-    size="icon"
+    // size="icon"
     type="button"
     variant="ghost"
     {...props}

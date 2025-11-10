@@ -80,7 +80,8 @@ export async function POST(req: Request, context: RouteContext) {
       throw error;
     }
 
-    const { role, content, parts, attachments = [], id: customId } = body;
+    const { role, content, parts, attachments = [] } = body;
+    const customId = (body as any).id; // Extract id if it exists, but don't error
 
     if (!role || !content) {
       return NextResponse.json(
