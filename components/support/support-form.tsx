@@ -3,7 +3,9 @@
 import { send } from '@emailjs/browser';
 import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
-import { Input, Select, Textarea } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '../ui/button';
 
 type FormData = {
@@ -179,64 +181,121 @@ export default function ContactForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Input
-            id="name"
-            name="name"
-            type="text"
-            label="Name"
-            required
-            value={formData.name}
-            onChange={handleInputChange}
-            error={errors.name}
-            placeholder="Your full name"
-          />
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="name"
+              className="font-medium text-sm text-canvas-text"
+            >
+              Name<span className="text-red-600">*</span>
+            </label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Your full name"
+              aria-invalid={!!errors.name}
+              aria-describedby="name-error"
+            />
+            {errors.name && (
+              <span id="name-error" className="text-xs text-red-600">
+                {errors.name}
+              </span>
+            )}
+          </div>
 
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            label="Email"
-            required
-            value={formData.email}
-            onChange={handleInputChange}
-            error={errors.email}
-            placeholder="your@email.com"
-          />
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="email"
+              className="font-medium text-sm text-canvas-text"
+            >
+              Email<span className="text-red-600">*</span>
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="your@email.com"
+              aria-invalid={!!errors.email}
+              aria-describedby="email-error"
+            />
+            {errors.email && (
+              <span id="email-error" className="text-xs text-red-600">
+                {errors.email}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Input
-            id="company"
-            name="company"
-            type="text"
-            label="Company"
-            value={formData.company}
-            onChange={handleInputChange}
-            placeholder="Your company name"
-          />
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="company"
+              className="font-medium text-sm text-canvas-text"
+            >
+              Company
+            </label>
+            <Input
+              id="company"
+              name="company"
+              type="text"
+              value={formData.company}
+              onChange={handleInputChange}
+              placeholder="Your company name"
+            />
+          </div>
 
-          <Select
-            id="budget"
-            name="budget"
-            label="Budget Range"
-            value={formData.budget}
-            onChange={handleInputChange}
-            options={budgetOptions}
-            placeholder="Select budget range"
-          />
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="budget"
+              className="font-medium text-sm text-canvas-text"
+            >
+              Budget Range
+            </label>
+            <Select
+              name="budget"
+              value={formData.budget}
+              onValueChange={(value: string) =>
+                handleInputChange({
+                  target: { name: 'budget', value },
+                } as any)
+              }
+
+              // options={budgetOptions}
+              // placeholder="Select budget range"
+            />
+          </div>
         </div>
 
-        <Textarea
-          id="project"
-          name="project"
-          label="Project Description"
-          required
-          value={formData.project}
-          onChange={handleInputChange}
-          error={errors.project}
-          rows={6}
-          placeholder="Tell us about your project, goals, timeline, and any specific requirements..."
-        />
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="project"
+            className="font-medium text-sm text-canvas-text"
+          >
+            Project Description<span className="text-red-600">*</span>
+          </label>
+          <Textarea
+            id="project"
+            name="project"
+            required
+            value={formData.project}
+            onChange={handleInputChange}
+            rows={6}
+            placeholder="Tell us about your project, goals, timeline, and any specific requirements..."
+            aria-invalid={!!errors.project}
+            aria-describedby="project-error"
+          />
+          {errors.project && (
+            <span id="project-error" className="text-xs text-red-600">
+              {errors.project}
+            </span>
+          )}
+        </div>
 
         <div className="pt-4">
           <Button

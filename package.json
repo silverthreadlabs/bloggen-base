@@ -24,7 +24,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
-    "build": "tsx lib/db/migrate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "biome check --write --max-diagnostics=9999999",
     "format": "biome format --write",

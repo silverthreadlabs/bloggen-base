@@ -3,6 +3,7 @@
 // ============================================================================
 
 export { default as ChatClient } from './chat-client';
+export { LengthSelector, ToneSelector } from './selectors';
 export {
   ChatHeader,
   ChatInput,
@@ -12,8 +13,6 @@ export {
   MessageAvatar,
   MessageList,
 } from './ui';
-
-export { LengthSelector, ToneSelector } from './selectors';
 
 // ============================================================================
 // TYPE EXPORTS

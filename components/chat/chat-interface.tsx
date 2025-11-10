@@ -7,7 +7,11 @@ import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
-import { useChats } from '@/lib/hooks/chat';
+import {
+  useChatOperations,
+  useChats,
+  useMessageOperations,
+} from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
 import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import {
@@ -16,7 +20,6 @@ import {
 } from '@/lib/stores/chat-pin-store';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
-import { useChatOperations, useMessageOperations } from '@/lib/hooks/chat';
 
 type Props = {
   chatId: string;

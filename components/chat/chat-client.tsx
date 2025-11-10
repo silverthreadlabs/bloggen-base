@@ -42,8 +42,8 @@ import { Response } from '@/components/ai-elements/response';
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 import { useChatActions } from '@/lib/hooks/chat';
 import { hardcodedMessages, mockResponses, suggestions } from './chat-data';
-import { ChatHeader, EmptyState, MessageAvatar } from './ui';
 import type { HardcodedMessageType } from './types';
+import { ChatHeader, EmptyState, MessageAvatar } from './ui';
 import { isLastAssistantMessage } from './utils/message-utils';
 
 // ============================================================================

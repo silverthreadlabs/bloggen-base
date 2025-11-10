@@ -65,7 +65,7 @@
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import * as React from 'react';
-import { Input, type InputProps } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 // "use client";
@@ -131,39 +131,41 @@ import { cn } from '@/lib/utils';
 
 // export { PasswordInput };
 
-const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, ...props }, ref) => {
-    const [showPassword, setShowPassword] = React.useState(false);
-    const disabled =
-      props.value === '' || props.value === undefined || props.disabled;
+const PasswordInput = React.forwardRef<
+  HTMLInputElement,
+  React.ComponentProps<'input'>
+>(({ className, ...props }, ref) => {
+  const [showPassword, setShowPassword] = React.useState(false);
+  const disabled =
+    props.value === '' || props.value === undefined || props.disabled;
 
-    return (
-      <div className="relative">
-        <Input
-          {...props}
-          type={showPassword ? 'text' : 'password'}
-          name="password_fake"
-          className={cn('hide-password-toggle pr-10', className)}
-          ref={ref}
-        />
-        <button
-          type="button"
-          className="absolute top-0 right-0 flex h-full w-10 items-center justify-center hover:cursor-pointer"
-          onClick={() => setShowPassword((prev) => !prev)}
-          tabIndex={disabled ? -1 : 0}
-        >
-          {showPassword ? (
-            <EyeIcon className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <EyeOffIcon className="h-4 w-4" aria-hidden="true" />
-          )}
-          <span className="sr-only">
-            {showPassword ? 'Hide password' : 'Show password'}
-          </span>
-        </button>
+  return (
+    <div className="relative">
+      <Input
+        {...props}
+        type={showPassword ? 'text' : 'password'}
+        name="password_fake"
+        className={cn('hide-password-toggle pr-10', className)}
+        ref={ref}
+      />
+      <button
+        type="button"
+        className="absolute top-0 right-0 flex h-full w-10 items-center justify-center hover:cursor-pointer"
+        onClick={() => setShowPassword((prev) => !prev)}
+        tabIndex={disabled ? -1 : 0}
+      >
+        {showPassword ? (
+          <EyeIcon className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <EyeOffIcon className="h-4 w-4" aria-hidden="true" />
+        )}
+        <span className="sr-only">
+          {showPassword ? 'Hide password' : 'Show password'}
+        </span>
+      </button>
 
-        {/* hides browsers password toggles */}
-        <style>{`
+      {/* hides browsers password toggles */}
+      <style>{`
                 .hide-password-toggle::-ms-reveal,
                 .hide-password-toggle::-ms-clear {
                     visibility: hidden;
@@ -171,10 +173,9 @@ const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
                     display: none;
                 }
             `}</style>
-      </div>
-    );
-  },
-);
+    </div>
+  );
+});
 PasswordInput.displayName = 'PasswordInput';
 
 export { PasswordInput };
