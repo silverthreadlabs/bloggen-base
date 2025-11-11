@@ -17,6 +17,7 @@ import {
   saveMessage,
 } from '@/lib/db/chat-queries';
 import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
+import { generateChatTitle } from '@/lib/utils/generate-chat-title';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -94,7 +95,8 @@ export async function POST(req: Request) {
               .join('') || '';
 
           if (textContent.trim()) {
-            title = textContent.slice(0, 50).trim();
+            // Generate AI title immediately (happens in parallel with chat creation)
+            title = await generateChatTitle(textContent);
           }
         }
 
@@ -159,6 +161,22 @@ export async function POST(req: Request) {
       model: openai('gpt-4o-mini'),
       system: getSystemPrompt('default'),
       messages: convertToModelMessages(modifiedMessages),
+      async onFinish({ text: assistantResponse }) {
+        // Save assistant response to database
+        if (chatId) {
+          try {
+            await saveMessage(
+              chatId,
+              'assistant',
+              assistantResponse,
+              [{ type: 'text', text: assistantResponse }],
+              [],
+            );
+          } catch (error) {
+            console.error('Error saving assistant message:', error);
+          }
+        }
+      },
     });
 
     const response = result.toUIMessageStreamResponse();
