@@ -25,6 +25,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build": "next build",
     "start": "next start",
     "lint": "biome check --write --max-diagnostics=9999999",
     "format": "biome format --write",
