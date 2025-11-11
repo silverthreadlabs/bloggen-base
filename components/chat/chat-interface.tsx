@@ -13,7 +13,7 @@ import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import {
   useChatPinStatus,
   useToggleChatPin,
-} from '@/lib/stores/chat-pin-store';
+} from '@/lib/hooks/chat/use-chat-pin';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
 import { useChatOperations, useMessageOperations } from '@/lib/hooks/chat';
@@ -275,7 +275,7 @@ export function ChatInterface({
 
   const handleTogglePin = useCallback(() => {
     togglePin(chatId, !pinned);
-    toast.success(pinned ? 'Chat unpinned' : 'Chat pinned');
+    // toast.success(pinned ? 'Chat unpinned' : 'Chat pinned');
   }, [chatId, pinned, togglePin]);
 
   const handleUpdateTitle = useCallback(

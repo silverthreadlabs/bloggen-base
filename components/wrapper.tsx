@@ -4,6 +4,7 @@
 // import { Logo } from "./logo";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useState } from 'react';
 import { URLStateProvider } from './providers/url-state-provider';
 
 export function Wrapper(props: { children: React.ReactNode }) {
@@ -26,9 +27,22 @@ export function Wrapper(props: { children: React.ReactNode }) {
   );
 }
 
-const queryClient = new QueryClient();
-
 export function WrapperWithQuery(props: { children: React.ReactNode }) {
+  // Create QueryClient inside component to avoid SSR issues
+  // Using useState with lazy initialization ensures it's only created once per component instance
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+          },
+        },
+      }),
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <URLStateProvider>{props.children}</URLStateProvider>
