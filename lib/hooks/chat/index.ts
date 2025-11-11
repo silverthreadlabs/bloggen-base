@@ -18,6 +18,7 @@ export type { Chat, ChatWithMessages, CreateMessagePayload } from './types';
 export {
   useCreateChat,
   useDeleteChat,
+  useUpdateChatTitleInCache,
   useTogglePinChat,
   useUpdateChatTitle,
 } from './use-chat-mutations';

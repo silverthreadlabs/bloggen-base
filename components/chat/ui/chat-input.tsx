@@ -1,6 +1,7 @@
 'use client';
 
-import { GlobeIcon, MicIcon } from 'lucide-react';
+import { GlobeIcon } from 'lucide-react';
+import { useRef } from 'react';
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -14,6 +15,7 @@ import {
   PromptInputFooter,
   PromptInputHeader,
   type PromptInputMessage,
+  PromptInputSpeechButton,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
@@ -54,6 +56,8 @@ export function ChatInput({
   onStopAction,
   disabled = false,
 }: Props) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   return (
     <PromptInput globalDrop multiple onSubmit={onSubmitAction}>
       <PromptInputHeader>
@@ -63,6 +67,7 @@ export function ChatInput({
       </PromptInputHeader>
       <PromptInputBody>
         <PromptInputTextarea
+          ref={textareaRef}
           onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}
           disabled={disabled}
@@ -86,14 +91,13 @@ export function ChatInput({
             onChange={onLengthChangeAction}
             disabled={disabled}
           />
-          <PromptInputButton
-            onClick={() => onMicrophoneChangeAction(!useMicrophone)}
-            variant={useMicrophone ? 'solid' : 'ghost'}
+          <PromptInputSpeechButton
+            textareaRef={textareaRef}
+            onTranscriptionChange={(transcribedText) => {
+              onTextChangeAction(transcribedText);
+            }}
             disabled={disabled}
-          >
-            <MicIcon size={16} />
-            <span className="sr-only">Microphone</span>
-          </PromptInputButton>
+          />
           <PromptInputButton
             onClick={() => onWebSearchChangeAction(!useWebSearch)}
             variant={useWebSearch ? 'solid' : 'ghost'}

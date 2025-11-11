@@ -2,7 +2,8 @@
 // COMPONENT EXPORTS
 // ============================================================================
 
-export { default as ChatClient } from './chat-client';
+export { ChatContainer } from './chat-container';
+export { ChatInterface } from './chat-interface';
 export {
   ChatHeader,
   ChatInput,

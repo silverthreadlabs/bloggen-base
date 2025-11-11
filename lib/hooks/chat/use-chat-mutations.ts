@@ -36,7 +36,72 @@ export function useCreateChat() {
 }
 
 /**
- * Update chat title with optimistic updates
+ * Update chat title in cache without refetching
+ * Used when title is received from streaming metadata
+ */
+export function useUpdateChatTitleInCache() {
+  const queryClient = useQueryClient();
+
+  return (chatId: string, title: string) => {
+    const now = new Date();
+
+    // Update chat list cache (for sidebar)
+    queryClient.setQueryData<Chat[]>(chatKeys.list(), (oldChats) => {
+      if (!oldChats) {
+        return [
+          {
+            id: chatId,
+            title,
+            createdAt: now,
+            updatedAt: now,
+            userId: '',
+          },
+        ];
+      }
+      const exists = oldChats.some((chat) => chat.id === chatId);
+      if (exists) {
+        return oldChats.map((chat) =>
+          chat.id === chatId ? { ...chat, title, updatedAt: now } : chat
+        );
+      }
+      return [
+        {
+          id: chatId,
+          title,
+          createdAt: now,
+          updatedAt: now,
+          userId: '',
+        },
+        ...oldChats,
+      ];
+    });
+
+    // Update chat detail cache (for header)
+    queryClient.setQueryData<ChatWithMessages>(
+      chatKeys.detail(chatId),
+      (oldData) => {
+        if (!oldData) {
+          return {
+            id: chatId,
+            title,
+            createdAt: now,
+            updatedAt: now,
+            userId: '',
+            messages: [],
+          };
+        }
+        return {
+          ...oldData,
+          title,
+          updatedAt: now,
+        };
+      }
+    );
+  };
+}
+
+/**
+ * Update chat title with optimistic updates and API call
  */
 export function useUpdateChatTitle() {
   const queryClient = useQueryClient();

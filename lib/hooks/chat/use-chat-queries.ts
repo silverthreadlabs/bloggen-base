@@ -26,8 +26,10 @@ export function useChat(chatId: string | undefined) {
     enabled: !!chatId,
     retry: 0,
     retryOnMount: false,
-    refetchOnMount: false,
+    refetchOnMount: false, // Don't refetch on mount (data is passed as initialChat)
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    staleTime: 0, // Always consider data stale, refetch immediately when invalidated
+    // Note: Will refetch when explicitly invalidated via invalidateQueries
   });
 }

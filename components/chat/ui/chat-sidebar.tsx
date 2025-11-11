@@ -110,10 +110,11 @@ export function ChatSidebar({ currentChatId }: Props) {
     return { pinnedChats: pinned, groupedChats: grouped };
   }, [chats, searchQuery]);
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChat = useCallback(() => {    
     // Navigate to /chat without creating a chat immediately
     // Chat will be created when first message is sent
     router.push('/chat');
+    router.refresh();
   }, [router]);
 
   const handleDeleteChat = useCallback(
@@ -138,15 +139,12 @@ export function ChatSidebar({ currentChatId }: Props) {
 
       deleteChatMutation.mutate(chatId, {
         onSuccess: () => {
-          if (currentChatId === chatId) {
-            // Navigate to next chat if available, otherwise to /chat
-            if (nextChatId) {
-              router.replace(`/chat/${nextChatId}`);
-            } else {
-              router.replace('/chat');
-            }
-          }
           toast.success('Chat deleted');
+          
+          // Only navigate if we're deleting the currently active chat
+          if (currentChatId === chatId) {
+            window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
+          }
         },
         onError: () => {
           toast.error('Failed to delete chat');
@@ -225,7 +223,10 @@ export function ChatSidebar({ currentChatId }: Props) {
         <SidebarMenuButton
           isActive={isActive}
           onClick={() => router.replace(`/chat/${chat.id}`)}
-          className="group/menu-item"
+          className={cn(
+            "group/menu-item",
+            isActive && "bg-canvas-bg-active font-medium border-l-2 border-primary-solid"
+          )}
         >
           {isEditing ? (
             <div

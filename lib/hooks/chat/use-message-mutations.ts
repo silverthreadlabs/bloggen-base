@@ -128,8 +128,9 @@ export function useDeleteMessage() {
 }
 
 /**
- * Regenerate a message (delete it and all after with optimistic updates)
- * Used in combination with server actions for the actual deletion
+ * Regenerate a message (optimistically remove it and all after)
+ * Note: The actual deletion should be called before triggering this mutation
+ * Invalidation happens in onFinish after new message is generated
  */
 export function useRegenerateMessage() {
   const queryClient = useQueryClient();
@@ -138,13 +139,12 @@ export function useRegenerateMessage() {
     mutationFn: async ({
       chatId,
       messageId,
-      deleteAction,
     }: {
       chatId: string;
       messageId: string;
-      deleteAction: () => Promise<any>;
     }) => {
-      return await deleteAction();
+      // Just return success - deletion already happened
+      return { success: true };
     },
     onMutate: async ({ chatId, messageId }) => {
       await queryClient.cancelQueries({ queryKey: chatKeys.detail(chatId) });
@@ -153,7 +153,7 @@ export function useRegenerateMessage() {
         chatKeys.detail(chatId),
       );
 
-      // Optimistically remove message and all after it
+      // Optimistically remove message and all after it from cache
       if (previousChat) {
         const messageIndex = previousChat.messages.findIndex(
           (m) => m.id === messageId,
@@ -176,10 +176,6 @@ export function useRegenerateMessage() {
       }
       toast.error('Failed to regenerate message');
     },
-    onSettled: (_data, _error, { chatId }) => {
-      // Invalidate after regeneration completes
-      queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
-      queryClient.invalidateQueries({ queryKey: chatKeys.list() });
-    },
+    // Don't invalidate here - let onFinish handle it after streaming completes
   });
 }
