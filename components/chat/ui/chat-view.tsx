@@ -20,7 +20,7 @@ type Props = {
   status: 'submitted' | 'streaming' | 'ready' | 'error';
   isLoading: boolean;
   isLoadingChat?: boolean;
-  isSavingMessage?: boolean;
+  isProcessing?: boolean;
   text: string;
   setText: (text: string) => void;
   useWebSearch: boolean;
@@ -51,7 +51,7 @@ export function ChatView({
   status,
   isLoading,
   isLoadingChat = false,
-  isSavingMessage = false,
+  isProcessing = false,
   text,
   setText,
   useWebSearch,
@@ -112,7 +112,7 @@ export function ChatView({
               <MessageList
                 messages={messages}
                 isLoading={isLoading}
-                isSavingMessage={isSavingMessage}
+                isProcessing={isProcessing}
                 onDelete={onDelete}
                 onEdit={onEdit}
                 onRegenerate={onRegenerate}

@@ -2,9 +2,20 @@
 
 // import { ThemeToggle } from "./theme-toggle";
 // import { Logo } from "./logo";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  type QueryClient as QueryClientType,
+} from '@tanstack/react-query';
 import Link from 'next/link';
 import { URLStateProvider } from './providers/url-state-provider';
+
+// Expose QueryClient to window for debugging
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__: QueryClientType;
+  }
+}
 
 export function Wrapper(props: { children: React.ReactNode }) {
   return (
@@ -27,6 +38,11 @@ export function Wrapper(props: { children: React.ReactNode }) {
 }
 
 const queryClient = new QueryClient();
+
+// Expose QueryClient to window for debugging in development
+if (typeof window !== 'undefined') {
+  window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+}
 
 export function WrapperWithQuery(props: { children: React.ReactNode }) {
   return (

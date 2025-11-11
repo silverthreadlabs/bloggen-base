@@ -114,15 +114,18 @@ export async function saveMessage(
     messageData.id = customId;
   }
 
-  const [newMessage] = await db.insert(message).values(messageData).returning();
+  // Use transaction to ensure immediate commit
+  return await db.transaction(async (tx) => {
+    const [newMessage] = await tx.insert(message).values(messageData).returning();
 
-  // Update chat's updatedAt timestamp
-  await db
-    .update(chat)
-    .set({ updatedAt: new Date() })
-    .where(eq(chat.id, chatId));
+    // Update chat's updatedAt timestamp
+    await tx
+      .update(chat)
+      .set({ updatedAt: new Date() })
+      .where(eq(chat.id, chatId));
 
-  return newMessage;
+    return newMessage;
+  });
 }
 
 export async function getMessagesByChatId(chatId: string) {

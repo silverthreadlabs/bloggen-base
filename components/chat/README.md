@@ -1,271 +1,223 @@
 # Chat Module
 
-A complete, self-contained chat interface built with AI SDK and AI Elements.
+A complete chat system built with AI SDK, React Query, and AI Elements.
 
-## 📦 Structure
+## 📦 Architecture
 
 ```
 chat/
 ├── index.ts                  # Main exports
 ├── types.ts                  # TypeScript types
-├── chat-client.tsx           # Main chat component
-├── chat-header.tsx           # Header with branding
-├── chat-data.ts              # Demo/mock data
-├── message-avatar.tsx        # Avatar display
-├── empty-state.tsx           # Welcome screen
-├── hooks/
-│   └── use-chat-actions.ts   # Copy functionality
-└── utils/
-    └── message-utils.ts      # Helper functions
+├── chat-container.tsx        # Data fetching layer
+├── chat-interface.tsx        # Main chat orchestrator
+├── ui/
+│   ├── chat-view.tsx        # Layout wrapper
+│   ├── chat-header.tsx      # Header with branding
+│   ├── chat-input.tsx       # Message input
+│   ├── empty-state.tsx      # Welcome screen
+│   └── message-*.tsx        # Message components
+├── selectors/               # UI controls
+└── utils/                   # Helper functions
 ```
 
 ## 🚀 Usage
 
-```tsx
-import { ChatClient } from '@/components/chat';
+### In App Routes
 
-export default function ChatPage() {
-  return <ChatClient session={session} />;
+```tsx
+// app/(chat)/chat/page.tsx - New chat
+import { ChatContainer } from '@/components/chat/chat-container';
+
+export default async function ChatPage() {
+  const chatId = generateUUID();
+  return <ChatContainer chatId={chatId} key={chatId} isNewChat />;
 }
 ```
 
-## ⚙️ Configuration
+```tsx
+// app/(chat)/chat/[id]/page.tsx - Existing chat
+import { ChatContainer } from '@/components/chat/chat-container';
 
-### Toggle Mock/Real AI
-
-In `chat-client.tsx`, line 54:
-
-```typescript
-const USE_HARDCODED_MESSAGES = true; // false for real AI
+export default async function ChatDetailPage({ params }: Props) {
+  const { id } = await params;
+  return <ChatContainer chatId={id} />;
+}
 ```
 
-### Change API Endpoint
+## 🔄 Component Flow
 
-In `chat-client.tsx`, line 72:
+**1. ChatContainer** (`chat-container.tsx`)
+- Receives `chatId` and optional `isNewChat` flag
+- Fetches existing chat from database (skipped for new chats)
+- Renders `ChatInterface` with loading states
+
+**2. ChatInterface** (`chat-interface.tsx`)
+- Manages AI SDK `useChat` hook
+- Handles message operations (save, delete, regenerate)
+- Syncs with React Query cache
+- Passes state to `ChatView`
+
+**3. ChatView** (`ui/chat-view.tsx`)
+- Layout wrapper with sidebar and main content
+- Renders conversation and input areas
+- No business logic, pure presentation
+
+## ⚙️ Configuration
+
+### API Endpoint
+
+AI requests go to `/api/chat` by default. Configure in `ChatInterface`:
 
 ```typescript
-api: '/api/chat', // Change to your endpoint
+const { messages, sendMessage } = useChat({
+  api: '/api/chat', // Change endpoint here
+});
+```
+
+### Database Integration
+
+Chat persistence uses React Query hooks from `lib/hooks/chat`:
+
+```typescript
+const { data: existingChat } = useChat(chatId);        // Fetch chat
+const { mutate: createChat } = useCreateChat();        // Create chat
+const { mutate: saveMessage } = useCreateMessage();    // Save message
 ```
 
 ### Customize Branding
 
-In `chat-header.tsx`:
+Edit `ui/chat-header.tsx`:
 
 ```typescript
 <h1>AI Assistant</h1>  // Change title
 <p>Powered by AI SDK</p>  // Change subtitle
 ```
 
-### Customize Suggestions
-
-In `chat-data.ts`:
-
-```typescript
-export const suggestions = [
-  'Your custom suggestion 1',
-  'Your custom suggestion 2',
-];
-```
-
-### Customize Mock Responses
-
-In `chat-data.ts`:
-
-```typescript
-export const mockResponses = [
-  'Your custom response...',
-];
-```
-
 ## 📋 Dependencies
 
-### NPM Packages
+### External Packages
 ```bash
-npm install ai @ai-sdk/react @ai-sdk/openai nanoid sonner lucide-react
+pnpm install ai @ai-sdk/react @tanstack/react-query sonner lucide-react
 ```
 
-### Internal Components
-- `@/components/ai-elements/*` - AI Elements library
-- `@/components/ui/button` - Button component
+### Internal Dependencies
+- `@/components/ai-elements/*` - AI Elements UI components
+- `@/lib/hooks/chat` - React Query hooks for chat/message CRUD
+- `@/lib/actions/chat-actions` - Server actions for database operations
+- `@/lib/stores/chat-pin-store` - Pin state management
 
-## 🔌 API Setup
+## 🔌 API Route
 
-Create `app/api/chat/route.ts`:
-
-```typescript
-import { streamText, convertToModelMessages } from 'ai';
-import { openai } from '@ai-sdk/openai';
-
-export const maxDuration = 30;
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  
-  const result = streamText({
-    model: openai('gpt-4o-mini'),
-    messages: convertToModelMessages(messages),
-  });
-
-  return result.toUIMessageStreamResponse();
-}
-```
-
-Add to `.env.local`:
-```env
-OPENAI_API_KEY=your_key_here
-```
+The chat API is at `app/api/chat/route.ts`. Key features:
+- AI SDK streaming with OpenAI
+- Message history handling
+- Web search integration
+- Error handling
 
 ## ✨ Features
 
-- Real-time streaming responses
+### Core Functionality
+- **Real-time AI streaming** via AI SDK
+- **Persistent storage** with React Query + database
+- **Message operations**: Save, delete, regenerate
+- **Chat management**: Create, pin, delete conversations
+- **Web search integration** (optional per message)
+- **File attachments** support
+
+### UI Features  
+- Auto-scroll conversation
+- Loading states
+- Empty state with suggestions
 - Message actions (copy, regenerate, delete)
-- File attachments support
-- Voice input toggle
-- Web search toggle  
-- Suggestion chips
-- Auto-scroll
-- Mock mode for demos
+- Pinned chats sidebar
 - Dark mode support
-
-## 🎨 Customization
-
-All styling uses CSS variables:
-- `--canvas-bg`, `--canvas-text`
-- `--primary-solid`, `--primary-text-contrast`
-- `--secondary-bg-hover`, `--secondary-text-contrast`
-
-## 📤 Exports
-
-```typescript
-// Components
-export { ChatClient, ChatHeader, MessageAvatar, EmptyState };
-
-// Types
-export type { HardcodedMessageType, ChatStatus, UIMessage };
-
-// Data
-export { hardcodedMessages, suggestions, mockResponses };
-
-// Hooks & Utils
-export { useChatActions };
-export { extractMessageText, isLastAssistantMessage };
-```
-
-## 🎯 Portability
-
-- ✅ Self-contained - all logic in `chat/` folder
-- ✅ No app-specific dependencies
-- ✅ Easy to customize - edit constants directly
-- ✅ Full TypeScript support
-- ✅ Works standalone
-
-## 📝 Notes
-
-- Start with `USE_HARDCODED_MESSAGES = true` to test without API key
-- Switch to `false` and add `OPENAI_API_KEY` for real AI
-- Edit `chat-data.ts` to customize demo content
-- All configuration is inline - no complex config system
-
-
-## 🏗️ Structure
-
-```
-components/chat/
-├── chat-client.tsx          # Main orchestrator component
-├── chat-header.tsx          # Header with branding and actions
-├── chat-input.tsx           # Message input using AI Elements PromptInput
-├── message-avatar.tsx       # User/assistant avatars
-├── empty-state.tsx          # Empty conversation state
-├── hooks/
-│   └── use-chat-actions.ts  # Copy action state management
-└── utils/
-    └── message-utils.ts     # Message processing utilities
-```
-
-## ✨ Features
-
-### AI Elements Integration
-- **Conversation**: Manages message display with auto-scroll
-- **Message**: Structured message layout with role-based styling
-- **MessageContent**: Content wrapper with variants
-- **Response**: Markdown/streaming content renderer
-- **Loader**: Built-in loading indicator
-- **Actions**: Message actions (copy, regenerate, delete)
-- **PromptInput**: Complete input solution with Submit/Stop buttons
-
-### Component Isolation
-- **No prop drilling**: Each component receives only what it needs
-- **Reusable**: Components can be used independently
-- **Type-safe**: Full TypeScript support throughout
-
-### Custom Hooks
-- `useChatActions`: Manages copy-to-clipboard with feedback
-
-### Utility Functions
-- `extractMessageText`: Extracts text from message parts
-- `isLastAssistantMessage`: Determines if message can be regenerated
-
-### Actions
-- **Copy**: Copy message text to clipboard with visual feedback (✓ icon on success)
-- **Regenerate**: Regenerate last assistant response
-- **Delete**: Remove user messages from conversation
-- **Stop**: Cancel streaming responses (built into PromptInput)
 
 ## 🎨 Styling
 
-Uses custom color system:
-- `canvas-*` for backgrounds and text
-- `primary-*` for user messages and buttons
-- `secondary-*` for assistant messages and avatars
-- `alert-*` for stop button
-- `success-*` for copy confirmation
+Uses CSS custom properties:
+- `--canvas-*` for backgrounds and text
+- `--primary-*` for user messages and buttons
+- `--secondary-*` for assistant messages
+- `--alert-*` for destructive actions
 
-## 🔧 Usage
+## 📤 Main Exports
 
-```tsx
-import { ChatClient } from '@/components/chat';
+```typescript
+// Main components
+export { ChatContainer } from './chat-container';
+export { ChatInterface } from './chat-interface';
 
-export default function ChatPage() {
-  return <ChatClient session={session} />;
-}
+// UI components
+export { ChatHeader, ChatInput, ChatView, EmptyState } from './ui';
+
+// Selectors
+export { LengthSelector, ToneSelector } from './selectors';
 ```
 
-## 📦 Dependencies
+## 🔄 Data Flow
 
-- `@ai-sdk/react` - AI SDK React hooks (`useChat`)
-- `ai` - AI SDK core with `DefaultChatTransport`
-- `@/components/ai-elements` - **Primary UI components**:
-  - `Conversation`, `ConversationContent`, `ConversationScrollButton`
-  - `Message`, `MessageContent`
-  - `Response` (streaming markdown)
-  - `Loader` (typing indicator)
-  - `Actions`, `Action` (message actions)
-  - `PromptInput`, `PromptInputBody`, `PromptInputTextarea`, `PromptInputFooter`, `PromptInputSubmit`
-- `@/components/ui` - Base UI components (Button, Avatar, etc.)
+### New Chat Flow
+1. User navigates to `/chat`
+2. Server generates new UUID
+3. `ChatContainer` renders with `isNewChat=true`
+4. `ChatInterface` initializes without database fetch
+5. User sends first message
+6. Message triggers chat creation in database
+7. Subsequent messages auto-save
 
-## 🚀 AI SDK v6 Integration
+### Existing Chat Flow
+1. User navigates to `/chat/[id]`
+2. `ChatContainer` fetches chat from database via React Query
+3. Loading state shown while fetching
+4. `ChatInterface` renders with `initialChat` data
+5. Messages load from database
+6. New messages auto-save
 
-Follows the **AI SDK Elements example pattern**:
-- ✅ Uses `useChat` with `DefaultChatTransport`
-- ✅ Handles `messages.parts` for different content types
-- ✅ Manages `status` for UI states (ready, submitted, streaming, error)
-- ✅ Implements `sendMessage`, `regenerate`, `stop`, and `setMessages`
-- ✅ Uses AI Elements components for consistent UI/UX
-- ✅ Leverages `Conversation` for auto-scroll and message management
-- ✅ Uses `Response` component for markdown rendering
-- ✅ Integrates `PromptInput` with submit/stop functionality
+### Message Operations
+- **Save**: Automatically persists after AI response
+- **Delete**: Removes from UI and database, triggers trailing message cleanup
+- **Regenerate**: Deletes trailing messages, re-streams last response
+- **Copy**: Client-side only, no persistence
 
-## 📝 Key Differences from Custom Implementation
+## 🗄️ State Management
 
-**Before** (Custom Components):
-- Manual message layout and styling
-- Custom input with form handling
-- Separate loading indicator component
-- Manual scroll management
+### React Query (Server State)
+- `useChat(chatId)` - Fetch individual chat
+- `useChats()` - List all user chats
+- `useCreateChat()` - Create new chat
+- `useCreateMessage()` - Save message
+- `useDeleteMessage()` - Delete message
+- Automatic cache invalidation and refetching
 
-**After** (AI Elements):
-- `Conversation` handles layout and auto-scroll
-- `PromptInput` provides complete input solution
-- `Loader` built-in for status='submitted'
-- `Response` for content rendering
-- Consistent with AI SDK documentation examples
+### Local State (UI State)
+- Pinned chats (`chat-pin-store`)
+- Input text and modifiers
+- Web search toggle
+- Microphone toggle
+
+### AI SDK State
+- Streaming messages (`useChat` hook)
+- Loading/error states
+- Message parts handling
+
+## 🛠️ Key Hooks
+
+### From `lib/hooks/chat`
+```typescript
+// Queries
+const { data: chat } = useChat(chatId);
+const { data: chats } = useChats();
+
+// Mutations  
+const { mutate: createChat } = useCreateChat();
+const { mutate: saveMessage } = useCreateMessage();
+const { mutate: deleteMsg } = useDeleteMessage();
+```
+
+### From AI SDK
+```typescript
+const { messages, sendMessage, status, stop, regenerate } = useChat({
+  api: '/api/chat',
+  body: { /* metadata */ },
+});
+```

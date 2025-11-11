@@ -122,10 +122,11 @@ export function ChatSidebar({ currentChatId }: Props) {
     return { pinnedChats: pinned, groupedChats: grouped };
   }, [chats, searchQuery, optimisticPins]);
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChat = useCallback(() => {    
     // Navigate to /chat without creating a chat immediately
     // Chat will be created when first message is sent
     router.push('/chat');
+    router.refresh();
   }, [router]);
 
   const handleDeleteChat = useCallback(

@@ -1,13 +1,13 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
-import { useChats } from '@/lib/hooks/chat';
+import { useChats, useUpdateChatTitleInCache } from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
 import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import {
@@ -16,7 +16,7 @@ import {
 } from '@/lib/stores/chat-pin-store';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
-import { useChatOperations, useMessageOperations } from '@/lib/hooks/chat';
+import { useChatOperations, useMessageOperations, useChat as useChatQuery } from '@/lib/hooks/chat';
 
 type Props = {
   chatId: string;
@@ -33,7 +33,6 @@ export function ChatInterface({
   const [text, setText] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
-  const [isSavingMessage, setIsSavingMessage] = useState(false);
 
   const [modifiers, setModifiers] = useMessageModifiers();
 
@@ -41,13 +40,18 @@ export function ChatInterface({
   modifiersRef.current = modifiers;
 
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
+  const pendingSavesRef = useRef<Set<string>>(new Set());
 
   const { data: allChats } = useChats();
+  
+  // Fetch current chat data to get updated title
+  const { data: currentChat } = useChatQuery(chatId);
 
   const chatOps = useChatOperations(chatId);
   const messageOps = useMessageOperations(chatId);
   const togglePin = useToggleChatPin();
   const pinned = useChatPinStatus(chatId);
+  const updateChatTitleInCache = useUpdateChatTitleInCache();
 
   const {
     messages,
@@ -60,52 +64,71 @@ export function ChatInterface({
     id: chatId,
     generateId: generateUUID,
     onFinish: async (result) => {
+      // Save the assistant message with the correct client-generated ID
+      const assistantMessage = result.message;
+      
+      // Track this save as pending
+      pendingSavesRef.current.add(assistantMessage.id);
+      
+      // Get metadata for title updates
+      const metadata = result.message.metadata as {
+        chatId?: string;
+        chatTitle?: string;
+        isNewChat?: boolean;
+      } | undefined;
+
+      // Handle URL update for first message
       if (isFirstMessageRef.current) {
         window.history.replaceState({}, '', `/chat/${chatId}`);
         isFirstMessageRef.current = false;
 
-        // Invalidate and refetch sidebar to show new chat
-        await queryClient.invalidateQueries({
-          queryKey: chatKeys.list(),
-          refetchType: 'all',
-        });
-      }
-
-      if (result?.message?.role === 'assistant') {
-        const content =
-          result.message.parts
-            ?.filter((part: any) => part.type === 'text')
-            .map((part: any) => part.text)
-            .join('') || '';
-
-        if (content.trim()) {
-          setIsSavingMessage(true);
-          await messageOps.saveMessage(
-            {
-              role: 'assistant',
-              content,
-              parts: result.message.parts || [],
-            },
-            result.message.id,
-          );
-          setIsSavingMessage(false);
+        if (metadata?.chatTitle) {
+          // Update cache with new title instantly
+          updateChatTitleInCache(chatId, metadata.chatTitle);
         }
       }
 
-      messageOps.invalidateChat();
+      try {
+        await messageOps.saveMessage(
+          {
+            role: 'assistant',
+            content: assistantMessage.parts
+              .filter((part) => part.type === 'text')
+              .map((part) => (part.type === 'text' ? part.text : ''))
+              .join(''),
+            parts: assistantMessage.parts,
+          },
+          assistantMessage.id, // Use the client-generated ID
+        );
+        
+        // Invalidate immediately after save to refresh messages from DB
+        queryClient.invalidateQueries({
+          queryKey: chatKeys.detail(chatId),
+        });
+      } catch (error) {
+        // Error saving message
+      } finally {
+        // Remove from pending saves
+        pendingSavesRef.current.delete(assistantMessage.id);
+      }
     },
   });
 
-  // Initialize messages from initialChat on mount
-  if (initialChat?.messages?.length && messages.length === 0) {
-    setMessages(initialChat.messages);
+  // Initialize messages from server data on mount (for existing chats)
+  if (messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+    const chatData = currentChat || initialChat;
+    if (chatData?.messages) {
+      setMessages(chatData.messages);
+    }
   }
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  // Buttons are disabled while loading/streaming, and message is saved before streaming ends
+  const isProcessing = isLoading;
 
   const handleSubmit = useCallback(
     async (message: PromptInputMessage) => {
-      if (!message.text?.trim() || isLoading) return;
+      if (!message.text?.trim() || isProcessing) return;
 
       if (message.files?.length) {
         toast.success('Files attached', {
@@ -124,15 +147,15 @@ export function ChatInterface({
       );
       setText('');
     },
-    [sendMessage, isLoading],
+    [sendMessage, isProcessing],
   );
 
   const handleSuggestionClick = useCallback(
     (suggestion: string) => {
-      if (isLoading) return;
+      if (isProcessing) return;
       sendMessage({ text: suggestion });
     },
-    [sendMessage, isLoading],
+    [sendMessage, isProcessing],
   );
 
   const handleDelete = useCallback(
@@ -219,9 +242,27 @@ export function ChatInterface({
 
   const handleRegenerate = useCallback(
     async (messageId: string) => {
+      console.log('[handleRegenerate] Called with messageId:', messageId);
+      
+      // Wait for any pending saves on this message
+      if (pendingSavesRef.current.has(messageId)) {
+        const startTime = Date.now();
+        const maxWait = 5000; // 5 seconds max
+        
+        while (pendingSavesRef.current.has(messageId)) {
+          if (Date.now() - startTime > maxWait) {
+            toast.error('Please wait for the message to finish saving');
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
       const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1 || messages[messageIndex].role !== 'assistant')
+      
+      if (messageIndex === -1 || messages[messageIndex].role !== 'assistant') {
         return;
+      }
 
       try {
         messageOps.regenerateMessage(messageId, () =>
@@ -262,16 +303,32 @@ export function ChatInterface({
 
   const handleDeleteChat = useCallback(async () => {
     try {
+      // Find the next chat to navigate to before deleting
+      let nextChatId: string | undefined;
+      if (allChats && allChats.length > 0) {
+        const currentIndex = allChats.findIndex((chat) => chat.id === chatId);
+        if (currentIndex !== -1) {
+          // Try to find next chat (after current)
+          if (currentIndex < allChats.length - 1) {
+            nextChatId = allChats[currentIndex + 1].id;
+          }
+          // Otherwise try previous chat (before current)
+          else if (currentIndex > 0) {
+            nextChatId = allChats[currentIndex - 1].id;
+          }
+        }
+      }
+
       await chatOps.deleteChat();
 
-      const firstChat = allChats?.[0];
-      window.location.href = firstChat ? `/chat/${firstChat.id}` : '/chat';
+      // Navigate to next available chat, otherwise to /chat
+      window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
 
       toast.success('Chat deleted');
     } catch (error) {
       toast.error('Failed to delete chat');
     }
-  }, [chatOps, allChats]);
+  }, [chatOps, allChats, chatId]);
 
   const handleTogglePin = useCallback(() => {
     togglePin(chatId, !pinned);
@@ -301,7 +358,7 @@ export function ChatInterface({
       status={status}
       isLoading={isLoading}
       isLoadingChat={isLoadingChat}
-      isSavingMessage={isSavingMessage}
+      isProcessing={isProcessing}
       text={text}
       setText={setText}
       useWebSearch={useWebSearch}
@@ -313,7 +370,7 @@ export function ChatInterface({
       length={modifiers.length}
       setLength={(length) => setModifiers({ tone: modifiers.tone, length })}
       pinned={pinned}
-      chatTitle={initialChat?.title}
+      chatTitle={currentChat?.title || initialChat?.title}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       onEdit={handleEdit}
