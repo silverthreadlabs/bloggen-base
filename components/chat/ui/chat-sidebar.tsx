@@ -235,7 +235,10 @@ export function ChatSidebar({ currentChatId }: Props) {
         <SidebarMenuButton
           isActive={isActive}
           onClick={() => router.replace(`/chat/${chat.id}`)}
-          className="group/menu-item"
+          className={cn(
+            "group/menu-item",
+            isActive && "bg-canvas-bg-active font-medium border-l-2 border-primary-solid"
+          )}
         >
           {isEditing ? (
             <div
