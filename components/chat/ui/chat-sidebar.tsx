@@ -151,9 +151,12 @@ export function ChatSidebar({ currentChatId }: Props) {
 
       deleteChatMutation.mutate(chatId, {
         onSuccess: () => {
-          // Use full page reload for reliable navigation
-          window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
           toast.success('Chat deleted');
+          
+          // Only navigate if we're deleting the currently active chat
+          if (currentChatId === chatId) {
+            window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
+          }
         },
         onError: () => {
           toast.error('Failed to delete chat');
@@ -232,7 +235,10 @@ export function ChatSidebar({ currentChatId }: Props) {
         <SidebarMenuButton
           isActive={isActive}
           onClick={() => router.replace(`/chat/${chat.id}`)}
-          className="group/menu-item"
+          className={cn(
+            "group/menu-item",
+            isActive && "bg-canvas-bg-active font-medium border-l-2 border-primary-solid"
+          )}
         >
           {isEditing ? (
             <div
