@@ -13,6 +13,7 @@ import { isLastAssistantMessage } from '../utils/message-utils';
 type Props = {
   messages: UIMessage[];
   isLoading: boolean;
+  isProcessing?: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onRegenerate: (messageId: string) => void;
@@ -21,6 +22,7 @@ type Props = {
 export function MessageList({
   messages,
   isLoading,
+  isProcessing = false,
   onDelete,
   onEdit,
   onRegenerate,
@@ -80,14 +82,16 @@ export function MessageList({
                       <button
                         type="button"
                         onClick={() => handleSaveEdit(message.id)}
-                        className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                        disabled={isProcessing}
+                        className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Save
                       </button>
                       <button
                         type="button"
                         onClick={handleCancelEdit}
-                        className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+                        disabled={isProcessing}
+                        className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
@@ -115,7 +119,7 @@ export function MessageList({
                     <Action
                       tooltip="Regenerate"
                       onClick={() => onRegenerate(message.id)}
-                      disabled={isLoading}
+                      disabled={isLoading || isProcessing}
                     >
                       <RefreshCwIcon className="size-3" />
                     </Action>
@@ -126,6 +130,7 @@ export function MessageList({
                       <Action
                         tooltip="Edit"
                         onClick={() => handleStartEdit(message.id, messageText)}
+                        disabled={isProcessing}
                       >
                         <PencilIcon className="size-3" />
                       </Action>
