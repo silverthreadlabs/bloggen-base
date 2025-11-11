@@ -16,7 +16,7 @@ import {
 } from '@/lib/stores/chat-pin-store';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
-import { useChatOperations, useMessageOperations } from '@/lib/hooks/chat';
+import { useChatOperations, useMessageOperations, useChat as useChatQuery } from '@/lib/hooks/chat';
 
 type Props = {
   chatId: string;
@@ -33,7 +33,6 @@ export function ChatInterface({
   const [text, setText] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
-  const [isSavingMessage, setIsSavingMessage] = useState(false);
 
   const [modifiers, setModifiers] = useMessageModifiers();
 
@@ -43,6 +42,9 @@ export function ChatInterface({
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
 
   const { data: allChats } = useChats();
+  
+  // Fetch current chat data to get updated title
+  const { data: currentChat } = useChatQuery(chatId);
 
   const chatOps = useChatOperations(chatId);
   const messageOps = useMessageOperations(chatId);
@@ -64,34 +66,15 @@ export function ChatInterface({
         window.history.replaceState({}, '', `/chat/${chatId}`);
         isFirstMessageRef.current = false;
 
-        // Invalidate and refetch sidebar to show new chat
+        // Invalidate and refetch sidebar to show new chat with AI-generated title
         await queryClient.invalidateQueries({
           queryKey: chatKeys.list(),
           refetchType: 'all',
         });
       }
 
-      if (result?.message?.role === 'assistant') {
-        const content =
-          result.message.parts
-            ?.filter((part: any) => part.type === 'text')
-            .map((part: any) => part.text)
-            .join('') || '';
-
-        if (content.trim()) {
-          setIsSavingMessage(true);
-          await messageOps.saveMessage(
-            {
-              role: 'assistant',
-              content,
-              parts: result.message.parts || [],
-            },
-            result.message.id,
-          );
-          setIsSavingMessage(false);
-        }
-      }
-
+      // Assistant message is already saved on the server side in onFinish
+      // Just invalidate the cache to refetch with the saved message
       messageOps.invalidateChat();
     },
   });
@@ -301,7 +284,6 @@ export function ChatInterface({
       status={status}
       isLoading={isLoading}
       isLoadingChat={isLoadingChat}
-      isSavingMessage={isSavingMessage}
       text={text}
       setText={setText}
       useWebSearch={useWebSearch}
@@ -313,7 +295,7 @@ export function ChatInterface({
       length={modifiers.length}
       setLength={(length) => setModifiers({ tone: modifiers.tone, length })}
       pinned={pinned}
-      chatTitle={initialChat?.title}
+      chatTitle={currentChat?.title || initialChat?.title}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       onEdit={handleEdit}
