@@ -57,10 +57,18 @@ export function useMessageOperations(chatId: string) {
     [chatId, deleteMessageMutation],
   );
 
-  // Use mutate for regenerate with optimistic updates
+  // Regenerate message: delete from DB then trigger optimistic update
   const regenerateMessage = useCallback(
-    (messageId: string, deleteAction: () => Promise<any>) => {
-      regenerateMessageMutation.mutate({ chatId, messageId, deleteAction });
+    async (messageId: string, deleteAction: () => Promise<any>) => {
+      try {
+        // Delete trailing messages from database
+        await deleteAction();
+        // Trigger optimistic cache update
+        regenerateMessageMutation.mutate({ chatId, messageId });
+      } catch (error) {
+        console.error('Failed to delete trailing messages:', error);
+        throw error;
+      }
     },
     [chatId, regenerateMessageMutation],
   );
