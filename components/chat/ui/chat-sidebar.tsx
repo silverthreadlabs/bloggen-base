@@ -151,14 +151,8 @@ export function ChatSidebar({ currentChatId }: Props) {
 
       deleteChatMutation.mutate(chatId, {
         onSuccess: () => {
-          if (currentChatId === chatId) {
-            // Navigate to next chat if available, otherwise to /chat
-            if (nextChatId) {
-              router.replace(`/chat/${nextChatId}`);
-            } else {
-              router.replace('/chat');
-            }
-          }
+          // Use full page reload for reliable navigation
+          window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
           toast.success('Chat deleted');
         },
         onError: () => {
