@@ -29,6 +29,7 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
 
     // Get the message to find its chat and timestamp
     const message = await getMessage(id);
+    
     if (!message) {
       throw new ChatSDKError('not_found:chat', 'Message not found');
     }
@@ -44,13 +45,12 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
 
     // Delete the message and all messages after it
     await deleteMessagesAfter(chat.id, message.id);
-
+    
     return { success: true, chatId: chat.id };
   } catch (error) {
     if (error instanceof ChatSDKError) {
       throw error;
     }
-    console.error('Error in deleteTrailingMessages:', error);
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to delete trailing messages',
