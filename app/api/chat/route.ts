@@ -80,12 +80,13 @@ export async function POST(req: Request) {
       chatId = id;
     }
 
+    let chatTitle = 'New Chat';
+    
     if (chatId) {
       const existingChat = await getChatById(chatId);
 
       if (!existingChat) {
         const firstUserMessage = messages.find((m) => m.role === 'user');
-        let title = 'New Chat';
 
         if (firstUserMessage) {
           const textContent =
@@ -96,14 +97,17 @@ export async function POST(req: Request) {
 
           if (textContent.trim()) {
             // Generate AI title immediately (happens in parallel with chat creation)
-            title = await generateChatTitle(textContent);
+            chatTitle = await generateChatTitle(textContent);
           }
         }
 
-        await createChat(user.id, title, chatId);
+        await createChat(user.id, chatTitle, chatId);
+      } else {
+        chatTitle = existingChat.title;
       }
     }
 
+    // Save user message BEFORE streaming (ensures correct order)
     if (chatId && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'user') {
@@ -112,22 +116,24 @@ export async function POST(req: Request) {
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
 
-        messageExistsById(lastMessage.id)
-          .then((exists) => {
-            if (!exists) {
-              return saveMessage(
-                chatId,
-                'user',
-                content,
-                lastMessage.parts,
-                [],
-                lastMessage.id,
-              );
-            }
-          })
-          .catch((error) =>
-            console.error('Error checking/saving user message:', error),
-          );
+        try {
+          const exists = await messageExistsById(lastMessage.id);
+          if (!exists) {
+            const savedUserMsg = await saveMessage(
+              chatId,
+              'user',
+              content,
+              lastMessage.parts,
+              [],
+              lastMessage.id,
+            );
+            console.log('[Chat API] Saved user message:', savedUserMsg.id, 'for chat:', chatId);
+          } else {
+            console.log('[Chat API] User message already exists:', lastMessage.id);
+          }
+        } catch (error) {
+          console.error('[Chat API] Error checking/saving user message:', error);
+        }
       }
     }
 
@@ -161,26 +167,25 @@ export async function POST(req: Request) {
       model: openai('gpt-4o-mini'),
       system: getSystemPrompt('default'),
       messages: convertToModelMessages(modifiedMessages),
-      async onFinish({ text: assistantResponse }) {
-        // Save assistant response to database
-        if (chatId) {
-          try {
-            await saveMessage(
-              chatId,
-              'assistant',
-              assistantResponse,
-              [{ type: 'text', text: assistantResponse }],
-              [],
-            );
-          } catch (error) {
-            console.error('Error saving assistant message:', error);
-          }
-        }
-      },
+      // Don't save in onFinish - let client save with correct message ID
     });
 
-    const response = result.toUIMessageStreamResponse();
+    const response = result.toUIMessageStreamResponse({
+      messageMetadata({ part }) {
+        // Send chat metadata on finish event
+        if (part.type === 'finish' && chatId && chatTitle) {
+          return {
+            chatId,
+            chatTitle,
+            isNewChat: messages.length === 1,
+          };
+        }
+        return undefined;
+      },
+    });
+    
     const headers = new Headers(response.headers);
+    
     headers.set(
       'X-RateLimit-Limit',
       getRateLimitConfig(rateLimitResult.role).limit.toString(),
