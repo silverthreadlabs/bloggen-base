@@ -39,3 +39,5 @@ export {
   useChatSync,
   useMessageOperations,
 } from './component-hooks';
+// Chat Pin Hooks
+export { useChatPinStatus, useToggleChatPin } from './use-chat-pin';

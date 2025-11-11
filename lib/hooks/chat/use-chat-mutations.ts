@@ -2,7 +2,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createChat, deleteChat, togglePinChat, updateChatTitle } from './api';
+import { togglePinChat } from '@/lib/actions/chat-actions';
+import { createChat, deleteChat, updateChatTitle } from './api';
 import { chatKeys } from './query-keys';
 import type { Chat, ChatWithMessages } from './types';
 

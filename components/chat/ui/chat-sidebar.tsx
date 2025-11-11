@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import {
   ChevronDown,
   ChevronRight,
@@ -52,7 +51,10 @@ import {
   useDeleteChat,
   useUpdateChatTitle,
 } from '@/lib/hooks/chat';
-import { useChatPinStore, useToggleChatPin } from '@/lib/stores/chat-pin-store';
+import {
+  useChatPinStatus,
+  useToggleChatPin,
+} from '@/lib/hooks/chat/use-chat-pin';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -74,13 +76,9 @@ export function ChatSidebar({ currentChatId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
 
-  // Get optimistic pins and methods from Zustand store for reactivity
-  // Subscribing to optimisticPins ensures re-renders when pin status changes
-  const optimisticPins = useChatPinStore((state) => state.optimisticPins);
-  const getPinStatus = useChatPinStore((state) => state.getPinStatus);
-  const queryClient = useQueryClient();
-
   // Group chats by month and separate pinned
+  // React Query's optimistic updates automatically update the cache,
+  // so we can directly use chat.pinned from the cached data
   const { pinnedChats, groupedChats } = useMemo(() => {
     if (!chats) return { pinnedChats: [], groupedChats: {} };
 
@@ -89,21 +87,11 @@ export function ChatSidebar({ currentChatId }: Props) {
       return chat.title.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    // Use Zustand store for pin status (optimistic)
-    const pinned = filtered.filter((chat) => {
-      // Check optimistic state first, then fallback to chat.pinned
-      if (chat.id in optimisticPins) {
-        return optimisticPins[chat.id];
-      }
-      return chat.pinned;
-    });
-    const unpinned = filtered.filter((chat) => {
-      // Check optimistic state first, then fallback to chat.pinned
-      if (chat.id in optimisticPins) {
-        return !optimisticPins[chat.id];
-      }
-      return !chat.pinned;
-    });
+    // Filter pinned and unpinned chats
+    // React Query mutations update the cache optimistically, so chat.pinned
+    // will reflect the current state including pending optimistic updates
+    const pinned = filtered.filter((chat) => chat.pinned);
+    const unpinned = filtered.filter((chat) => !chat.pinned);
 
     // Group by month
     const grouped: Record<string, typeof unpinned> = {};
@@ -120,7 +108,7 @@ export function ChatSidebar({ currentChatId }: Props) {
     });
 
     return { pinnedChats: pinned, groupedChats: grouped };
-  }, [chats, searchQuery, optimisticPins]);
+  }, [chats, searchQuery]);
 
   const handleNewChat = useCallback(() => {    
     // Navigate to /chat without creating a chat immediately
@@ -278,18 +266,11 @@ export function ChatSidebar({ currentChatId }: Props) {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  const currentPinned = getPinStatus(chat.id, queryClient);
-                  handlePinChat(chat.id, !currentPinned);
+                  handlePinChat(chat.id, !chat.pinned);
                 }}
               >
                 <Pin className="h-4 w-4 mr-2" />
-                {(() => {
-                  const isPinned =
-                    chat.id in optimisticPins
-                      ? optimisticPins[chat.id]
-                      : chat.pinned;
-                  return isPinned ? 'Unpin' : 'Pin';
-                })()}
+                {chat.pinned ? 'Unpin' : 'Pin'}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => startEditing(chat.id, chat.title, e)}
