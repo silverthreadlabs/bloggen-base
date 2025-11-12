@@ -88,8 +88,11 @@ export type TextInputContext = {
   clear: () => void;
 };
 
+
+
 export type PromptInputControllerProps = {
   textInput: TextInputContext;
+  contextInput: TextInputContext;
   attachments: AttachmentsContext;
   /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
   __registerFileInput: (
@@ -147,6 +150,10 @@ export function PromptInputProvider({
   // ----- textInput state
   const [textInput, setTextInput] = useState(initialTextInput);
   const clearInput = useCallback(() => setTextInput(''), []);
+
+  // ----- contextInput state
+  const [contextInput, setContextInput] = useState('');
+  const clearContext = useCallback(() => setContextInput(''), []);
 
   // ----- attachments state (global when wrapped)
   const [attachements, setAttachements] = useState<
@@ -218,10 +225,15 @@ export function PromptInputProvider({
         setInput: setTextInput,
         clear: clearInput,
       },
+      contextInput: {
+        value: contextInput,
+        setInput: setContextInput,
+        clear: clearContext,
+      },
       attachments,
       __registerFileInput,
     }),
-    [textInput, clearInput, attachments, __registerFileInput],
+    [textInput, clearInput, contextInput, clearContext, attachments, __registerFileInput],
   );
 
   return (
@@ -396,6 +408,7 @@ export const PromptInputActionAddAttachments = ({
 
 export type PromptInputMessage = {
   text?: string;
+  context?: string;
   files?: FileUIPart[];
 };
 
@@ -670,6 +683,13 @@ export const PromptInput = ({
           const formData = new FormData(form);
           return (formData.get('message') as string) || '';
         })();
+    
+    const context = usingProvider
+      ? controller.contextInput?.value || ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('context') as string) || '';
+        })();
 
     // Reset form immediately after capturing text to avoid race condition
     // where user input during async blob conversion would be lost
@@ -690,7 +710,7 @@ export const PromptInput = ({
       }),
     ).then((convertedFiles: FileUIPart[]) => {
       try {
-        const result = onSubmit({ text, files: convertedFiles }, event);
+        const result = onSubmit({ text, context, files: convertedFiles }, event);
 
         // Handle both sync and async onSubmit
         if (result instanceof Promise) {
@@ -699,6 +719,9 @@ export const PromptInput = ({
               clear();
               if (usingProvider) {
                 controller.textInput.clear();
+                if (controller.contextInput) {
+                  controller.contextInput.clear();
+                }
               }
             })
             .catch(() => {

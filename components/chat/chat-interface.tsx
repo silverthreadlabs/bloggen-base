@@ -31,6 +31,7 @@ export function ChatInterface({
 }: Props) {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
+  const [context, setContext] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
 
@@ -92,10 +93,6 @@ export function ChatInterface({
         await messageOps.saveMessage(
           {
             role: 'assistant',
-            content: assistantMessage.parts
-              .filter((part) => part.type === 'text')
-              .map((part) => (part.type === 'text' ? part.text : ''))
-              .join(''),
             parts: assistantMessage.parts,
           },
           assistantMessage.id, // Use the client-generated ID
@@ -136,16 +133,23 @@ export function ChatInterface({
         });
       }
 
+      // Combine message and context for sending to AI
+      const combinedText = message.context 
+        ? `Context: ${message.context}\n\n${message.text}`
+        : message.text;
+
       sendMessage(
-        { text: message.text },
+        { text: combinedText },
         {
           body: {
             tone: modifiersRef.current.tone,
             length: modifiersRef.current.length,
+            context: message.context, // Send context separately to backend
           },
         },
       );
       setText('');
+      setContext('');
     },
     [sendMessage, isProcessing],
   );
@@ -175,15 +179,15 @@ export function ChatInterface({
       if (editedMessage.role !== 'user') return;
 
       // Update the message in the database
-      messageOps.updateMessage(messageId, newContent);
+      const newParts = [{ type: 'text' as const, text: newContent }];
+      messageOps.updateMessage(messageId, newParts);
 
       // Update local messages state with properly typed parts
       const updatedMessages = messages.map((m) =>
         m.id === messageId
           ? {
               ...m,
-              content: newContent,
-              parts: [{ type: 'text' as const, text: newContent }],
+              parts: newParts,
             }
           : m,
       );
@@ -361,6 +365,8 @@ export function ChatInterface({
       isProcessing={isProcessing}
       text={text}
       setText={setText}
+      context={context}
+      setContext={setContext}
       useWebSearch={useWebSearch}
       setUseWebSearch={setUseWebSearch}
       useMicrophone={useMicrophone}

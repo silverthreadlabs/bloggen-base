@@ -23,7 +23,9 @@ import { LengthSelector, ToneSelector } from '../selectors';
 
 type Props = {
   text: string;
+  context: string;
   onTextChangeAction: (text: string) => void;
+  onContextChangeAction: (context: string) => void;
   useWebSearch: boolean;
   onWebSearchChangeAction: (use: boolean) => void;
   useMicrophone: boolean;
@@ -40,7 +42,9 @@ type Props = {
 
 export function ChatInput({
   text,
+  context,
   onTextChangeAction,
+  onContextChangeAction,
   useWebSearch,
   onWebSearchChangeAction,
   useMicrophone,
@@ -62,6 +66,14 @@ export function ChatInput({
         </PromptInputAttachments>
       </PromptInputHeader>
       <PromptInputBody>
+        <PromptInputTextarea
+          onChange={(event) => onContextChangeAction(event.target.value)}
+          value={context}
+          disabled={disabled}
+          placeholder="Context (optional)"
+          className="min-h-12 max-h-24 mb-2"
+          name="context"
+        />
         <PromptInputTextarea
           onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}
