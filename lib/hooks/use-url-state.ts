@@ -12,6 +12,7 @@
  * ```
  */
 
+import { useState } from 'react';
 import {
   parseAsInteger,
   parseAsString,
@@ -19,7 +20,7 @@ import {
   useQueryStates,
 } from 'nuqs';
 import { DEFAULT_LENGTH, DEFAULT_TONE } from '@/lib/config/message-modifiers';
-import { parseAsLiteral } from '@/lib/utils/url-parsers';
+import type { ToneOption, LengthOption } from '@/lib/config/message-modifiers';
 
 /**
  * Search query parameter
@@ -117,28 +118,16 @@ export function useChatParams() {
 
 /**
  * Combined chat message modifiers (tone and length)
- * Usage: ?tone=professional&length=comprehensive
+ * Now uses local state instead of URL params
  */
 export function useMessageModifiers() {
-  return useQueryStates(
-    {
-      tone: parseAsLiteral([
-        'neutral',
-        'professional',
-        'casual',
-        'friendly',
-        'concise',
-      ] as const).withDefault(DEFAULT_TONE),
-      length: parseAsLiteral([
-        'auto',
-        'brief',
-        'balanced',
-        'detailed',
-        'comprehensive',
-      ] as const).withDefault(DEFAULT_LENGTH),
-    },
-    {
-      shallow: true,
-    },
-  );
+  const [modifiers, setModifiers] = useState<{
+    tone: ToneOption;
+    length: LengthOption;
+  }>({
+    tone: DEFAULT_TONE,
+    length: DEFAULT_LENGTH,
+  });
+
+  return [modifiers, setModifiers] as const;
 }

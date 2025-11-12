@@ -4,11 +4,6 @@ import {
   getAuthenticatedUserFromRequest,
   handleApiError,
 } from '@/lib/api/utils';
-import {
-  applyMessageModifiers,
-  type LengthOption,
-  type ToneOption,
-} from '@/lib/config/message-modifiers';
 import { getSystemPrompt } from '@/lib/config/prompts';
 import {
   createChat,
@@ -66,15 +61,11 @@ export async function POST(req: Request) {
       messages,
       id,
       isRegenerate,
-      tone,
-      length,
       context,
     }: {
       messages: UIMessage[];
       id?: string;
       isRegenerate?: boolean;
-      tone?: ToneOption;
-      length?: LengthOption;
       context?: string;
     } = body;
 
@@ -147,40 +138,16 @@ export async function POST(req: Request) {
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
 
-        const combinedContent = `[Additional Context: ${context}]
+        const combinedContent = `<instructions>
+${context}
+</instructions>
 
-User Query: ${originalContent}`;
+${originalContent}`;
 
         modifiedMessages[lastMessageIndex] = {
           ...lastMessage,
           parts: lastMessage.parts.map((part) =>
             part.type === 'text' ? { ...part, text: combinedContent } : part,
-          ),
-        };
-      }
-    }
-    
-    // Then apply tone/length modifiers if specified
-    if (tone || length) {
-      const lastMessageIndex = modifiedMessages.length - 1;
-      const lastMessage = modifiedMessages[lastMessageIndex];
-
-      if (lastMessage?.role === 'user') {
-        const originalContent = lastMessage.parts
-          .filter((part) => part.type === 'text')
-          .map((part) => (part.type === 'text' ? part.text : ''))
-          .join('');
-
-        const modifiedContent = applyMessageModifiers(
-          originalContent,
-          tone || 'neutral',
-          length || 'auto',
-        );
-
-        modifiedMessages[lastMessageIndex] = {
-          ...lastMessage,
-          parts: lastMessage.parts.map((part) =>
-            part.type === 'text' ? { ...part, text: modifiedContent } : part,
           ),
         };
       }
