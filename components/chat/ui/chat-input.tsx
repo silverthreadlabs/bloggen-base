@@ -70,8 +70,8 @@ export function ChatInput({
           onChange={(event) => onContextChangeAction(event.target.value)}
           value={context}
           disabled={disabled}
-          placeholder="Context (optional)"
-          className="min-h-12 max-h-24 mb-2"
+          placeholder="Additional instructions (optional)"
+          className="min-h-12 max-h-24 mb-2 text-sm"
           name="context"
         />
         <PromptInputTextarea

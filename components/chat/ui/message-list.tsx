@@ -9,6 +9,7 @@ import { Response } from '@/components/ai-elements/response';
 import { useChatActions } from '@/lib/hooks/chat';
 import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from '../utils/message-utils';
+import { cn } from '@/lib/utils';
 
 type Props = {
   messages: UIMessage[];
@@ -71,7 +72,7 @@ export function MessageList({
 
         return (
           <Message key={message.id} from={message.role}>
-            <div>
+            <div className={cn('flex flex-col', message.role === 'user' ? 'items-end' : 'items-start')} >
               <MessageContent>
                 {isEditing ? (
                   <div className="space-y-2">
@@ -103,8 +104,16 @@ export function MessageList({
                 ) : (
                   <>
                     {messageContext && (
-                      <div className="text-sm text-muted-foreground/80">
-                        Context: {messageContext}
+                      <div className="mb-3 p-3 bg-muted/50 rounded-md border border-border/50">
+                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                          Instructions:
+                        </div>
+                        <div className="text-sm text-muted-foreground/90 whitespace-pre-line">
+                          {messageContext
+                            .replace(/\[tone-instruction\]|\[\/tone-instruction\]/g, '')
+                            .replace(/\[length-instruction\]|\[\/length-instruction\]/g, '')
+                            .trim()}
+                        </div>
                       </div>
                     )}
                     <Response>{messageText}</Response>
