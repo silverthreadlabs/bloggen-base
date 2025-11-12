@@ -296,6 +296,7 @@ export function dbMessageToUIMessage(dbMessage: DBMessage): UIMessage {
     id: dbMessage.id,
     role: dbMessage.role as 'user' | 'assistant' | 'system',
     parts: dbMessage.parts || [],
+    metadata: dbMessage.context ? { context: dbMessage.context } : undefined,
   };
 }
 
