@@ -193,7 +193,7 @@ export const message = pgTable('message', {
     .notNull()
     .references(() => chat.id, { onDelete: 'cascade' }),
   role: varchar('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
-  content: text('content').notNull(),
+  context: text('context'), // Renamed from content, now optional - use parts instead
   parts: jsonb('parts').notNull().$type<any[]>(),
   attachments: jsonb('attachments').$type<any[]>(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
