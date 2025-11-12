@@ -65,6 +65,9 @@ export function MessageList({
         );
 
         const isEditing = editingId === message.id;
+        const messageContext = (
+          message.metadata as { context?: string } | undefined
+        )?.context;
 
         return (
           <Message key={message.id} from={message.role}>
@@ -98,7 +101,14 @@ export function MessageList({
                     </div>
                   </div>
                 ) : (
-                  <Response>{messageText}</Response>
+                  <>
+                    {messageContext && (
+                      <div className="text-sm text-muted-foreground/80">
+                        Context: {messageContext}
+                      </div>
+                    )}
+                    <Response>{messageText}</Response>
+                  </>
                 )}
               </MessageContent>
 
