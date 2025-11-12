@@ -14,6 +14,22 @@ const client = postgres(process.env.DB_CONNECTION_STRING);
 const db = drizzle(client);
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Extract text content from parts array
+ * Parts can contain various types, this extracts only text
+ */
+export function extractContentFromParts(parts: any[]): string {
+  if (!parts || !Array.isArray(parts)) return '';
+  return parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text || '')
+    .join('');
+}
+
+// ============================================================================
 // CHAT OPERATIONS
 // ============================================================================
 
@@ -96,18 +112,22 @@ export async function togglePinChat(chatId: string, pinned: boolean) {
 export async function saveMessage(
   chatId: string,
   role: 'user' | 'assistant' | 'system',
-  content: string,
   parts: any[],
   attachments: any[] = [],
+  context?: string, // Optional context for the message
   customId?: string, // Optional: use custom ID instead of auto-generated
 ) {
   const messageData: any = {
     chatId,
     role,
-    content,
     parts,
     attachments,
   };
+
+  // Add context if provided
+  if (context) {
+    messageData.context = context;
+  }
 
   // If custom ID provided, use it (for AI SDK message IDs)
   if (customId) {
@@ -154,11 +174,12 @@ export async function getMessage(messageId: string) {
 /**
  * Check if a message with the same content already exists in the chat
  * Used to prevent duplicate saves during regeneration
+ * Now compares parts instead of content field
  */
 export async function messageExists(
   chatId: string,
   role: 'user' | 'assistant',
-  content: string,
+  parts: any[],
 ) {
   const [existing] = await db
     .select()
@@ -167,12 +188,18 @@ export async function messageExists(
       and(
         eq(message.chatId, chatId),
         eq(message.role, role),
-        eq(message.content, content),
       ),
     )
     .limit(1);
 
-  return !!existing;
+  // Compare parts content
+  if (existing) {
+    const existingContent = JSON.stringify(existing.parts);
+    const newContent = JSON.stringify(parts);
+    return existingContent === newContent;
+  }
+
+  return false;
 }
 
 /**
@@ -191,13 +218,11 @@ export async function messageExistsById(messageId: string) {
 
 export async function updateMessage(
   messageId: string,
-  content: string,
   parts: any[],
 ) {
   const [updated] = await db
     .update(message)
     .set({
-      content,
       parts,
       isEdited: true,
       updatedAt: new Date(),
@@ -270,12 +295,7 @@ export function dbMessageToUIMessage(dbMessage: DBMessage): UIMessage {
   return {
     id: dbMessage.id,
     role: dbMessage.role as 'user' | 'assistant' | 'system',
-    parts: dbMessage.parts || [
-      {
-        type: 'text',
-        text: dbMessage.content,
-      },
-    ],
+    parts: dbMessage.parts || [],
   };
 }
 
