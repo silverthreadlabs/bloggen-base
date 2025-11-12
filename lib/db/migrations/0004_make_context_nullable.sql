@@ -1,0 +1,1 @@
+ALTER TABLE "message" ALTER COLUMN "context" DROP NOT NULL;
