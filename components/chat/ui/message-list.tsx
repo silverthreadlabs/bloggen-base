@@ -116,7 +116,9 @@ export function MessageList({
                         </div>
                       </div>
                     )}
-                    <Response>{messageText}</Response>
+                    <Response isStreaming={isLastAssistant && isLoading}>
+                      {messageText}
+                    </Response>
                   </>
                 )}
               </MessageContent>
