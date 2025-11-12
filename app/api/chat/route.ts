@@ -135,6 +135,32 @@ export async function POST(req: Request) {
     }
 
     const modifiedMessages = [...messages];
+    
+    // First, combine context with the last user message if context exists
+    if (context) {
+      const lastMessageIndex = modifiedMessages.length - 1;
+      const lastMessage = modifiedMessages[lastMessageIndex];
+
+      if (lastMessage?.role === 'user') {
+        const originalContent = lastMessage.parts
+          .filter((part) => part.type === 'text')
+          .map((part) => (part.type === 'text' ? part.text : ''))
+          .join('');
+
+        const combinedContent = `[Additional Context: ${context}]
+
+User Query: ${originalContent}`;
+
+        modifiedMessages[lastMessageIndex] = {
+          ...lastMessage,
+          parts: lastMessage.parts.map((part) =>
+            part.type === 'text' ? { ...part, text: combinedContent } : part,
+          ),
+        };
+      }
+    }
+    
+    // Then apply tone/length modifiers if specified
     if (tone || length) {
       const lastMessageIndex = modifiedMessages.length - 1;
       const lastMessage = modifiedMessages[lastMessageIndex];
@@ -160,6 +186,15 @@ export async function POST(req: Request) {
       }
     }
 
+    // Log what's being sent to the model
+    console.log('[Chat API] ===== Messages being sent to model =====');
+    console.log('[Chat API] Total messages:', modifiedMessages.length);
+    console.log('[Chat API] Context provided:', context || 'none');
+    console.log('[Chat API] System prompt:', getSystemPrompt('default').substring(0, 100) + '...');
+    console.log('[Chat API] Messages:');
+    console.log(JSON.stringify(modifiedMessages, null, 2));
+    console.log('[Chat API] ==========================================');
+    
     const result = streamText({
       model: openai('gpt-4o-mini'),
       system: getSystemPrompt('default'),
