@@ -19,7 +19,7 @@ import {
   Settings,
   Trash2,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,8 +59,9 @@ type Props = {
   currentChatId?: string;
 };
 
-export function ChatSidebar({ currentChatId }: Props) {
+export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: chats, isLoading } = useChats();
   const { data: session } = useSession();
   const createChatMutation = useCreateChat();
@@ -73,6 +74,12 @@ export function ChatSidebar({ currentChatId }: Props) {
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  
+  // Extract current chat ID from pathname, fallback to prop
+  const currentChatId = useMemo(() => {
+    const match = pathname?.match(/\/chat\/([^/?]+)/);
+    return match ? match[1] : initialChatId;
+  }, [pathname, initialChatId]);
 
   // Get optimistic pins and methods from Zustand store for reactivity
   // Subscribing to optimisticPins ensures re-renders when pin status changes
