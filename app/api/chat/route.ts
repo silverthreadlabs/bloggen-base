@@ -68,12 +68,14 @@ export async function POST(req: Request) {
       isRegenerate,
       tone,
       length,
+      context,
     }: {
       messages: UIMessage[];
       id?: string;
       isRegenerate?: boolean;
       tone?: ToneOption;
       length?: LengthOption;
+      context?: string;
     } = body;
 
     if (!chatId && id) {
@@ -111,20 +113,15 @@ export async function POST(req: Request) {
     if (chatId && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'user') {
-        const content = lastMessage.parts
-          .filter((part) => part.type === 'text')
-          .map((part) => (part.type === 'text' ? part.text : ''))
-          .join('');
-
         try {
           const exists = await messageExistsById(lastMessage.id);
           if (!exists) {
             const savedUserMsg = await saveMessage(
               chatId,
               'user',
-              content,
               lastMessage.parts,
               [],
+              context, // Save context separately
               lastMessage.id,
             );
             console.log('[Chat API] Saved user message:', savedUserMsg.id, 'for chat:', chatId);

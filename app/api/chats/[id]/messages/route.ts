@@ -60,9 +60,9 @@ export async function POST(req: Request, context: RouteContext) {
     // Handle aborted requests gracefully
     let body: {
       role: string;
-      content: string;
       parts: any[];
       attachments?: any[];
+      context?: string;
     };
     try {
       body = await req.json();
@@ -80,12 +80,12 @@ export async function POST(req: Request, context: RouteContext) {
       throw error;
     }
 
-    const { role, content, parts, attachments = [] } = body;
+    const { role, parts, attachments = [], context: messageContext } = body;
     const customId = (body as any).id; // Extract id if it exists, but don't error
 
-    if (!role || !content) {
+    if (!role || !parts || !Array.isArray(parts) || parts.length === 0) {
       return NextResponse.json(
-        { error: 'Role and content are required' },
+        { error: 'Role and parts are required' },
         { status: 400 },
       );
     }
@@ -110,9 +110,9 @@ export async function POST(req: Request, context: RouteContext) {
     const message = await saveMessage(
       chatId,
       role,
-      content,
-      parts || [{ type: 'text', text: content }],
+      parts,
       attachments,
+      messageContext, // Save context separately
       customId, // Pass custom ID if provided (for AI SDK message IDs)
     );
 

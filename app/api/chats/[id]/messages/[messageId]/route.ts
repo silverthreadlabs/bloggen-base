@@ -33,11 +33,11 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     const { id: chatId, messageId } = await context.params;
-    const { content, parts } = await req.json();
+    const { parts } = await req.json();
 
-    if (!content) {
+    if (!parts || !Array.isArray(parts) || parts.length === 0) {
       return NextResponse.json(
-        { error: 'Content is required' },
+        { error: 'Parts are required' },
         { status: 400 },
       );
     }
@@ -54,8 +54,7 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     const updated = await updateMessage(
       messageId,
-      content,
-      parts || [{ type: 'text', text: content }],
+      parts,
     );
 
     return NextResponse.json({ message: updated });
