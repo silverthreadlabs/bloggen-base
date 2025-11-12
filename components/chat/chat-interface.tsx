@@ -6,6 +6,14 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
+import { 
+  getToneModifierWithMarkers, 
+  getLengthModifierWithMarkers,
+  TONE_MARKER_START,
+  TONE_MARKER_END,
+  LENGTH_MARKER_START,
+  LENGTH_MARKER_END,
+} from '@/lib/config/message-modifiers';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
 import { useChats, useUpdateChatTitleInCache } from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
@@ -43,8 +51,87 @@ export function ChatInterface({
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
   const pendingSavesRef = useRef<Set<string>>(new Set());
   const messagesInitializedRef = useRef(false);
+  const userContextRef = useRef(''); // Store user's actual context separately
 
   const { data: allChats } = useChats();
+  
+  // Build full context from user context and current modifiers
+  const buildFullContext = useCallback((userContext: string): string => {
+    let fullContext = userContext;
+    
+    // Add tone instructions with markers
+    const toneModifier = getToneModifierWithMarkers(modifiersRef.current.tone);
+    if (toneModifier) {
+      fullContext = fullContext ? `${fullContext}${toneModifier}` : toneModifier.trim();
+    }
+    
+    // Add length instructions with markers
+    const lengthModifier = getLengthModifierWithMarkers(modifiersRef.current.length);
+    if (lengthModifier) {
+      fullContext = fullContext ? `${fullContext}${lengthModifier}` : lengthModifier.trim();
+    }
+    
+    return fullContext;
+  }, []);
+  
+  // Extract user context by removing modifier sections using markers
+  const extractUserContext = useCallback((fullContext: string): string => {
+    let extracted = fullContext;
+    
+    // Remove tone modifier section using indexOf (more reliable than regex)
+    let toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+    while (toneStartIdx !== -1) {
+      const toneEndIdx = extracted.indexOf(TONE_MARKER_END, toneStartIdx);
+      if (toneEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted = extracted.substring(0, toneStartIdx) + 
+                    extracted.substring(toneEndIdx + TONE_MARKER_END.length);
+        toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+      } else {
+        break;
+      }
+    }
+    
+    // Remove length modifier section using indexOf
+    let lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+    while (lengthStartIdx !== -1) {
+      const lengthEndIdx = extracted.indexOf(LENGTH_MARKER_END, lengthStartIdx);
+      if (lengthEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted = extracted.substring(0, lengthStartIdx) + 
+                    extracted.substring(lengthEndIdx + LENGTH_MARKER_END.length);
+        lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+      } else {
+        break;
+      }
+    }
+    
+    return extracted.trim();
+  }, []);
+  
+  // Wrapper for setContext that updates userContextRef
+  const handleContextChange = useCallback((newContext: string) => {
+    const userPart = extractUserContext(newContext);
+    userContextRef.current = userPart;
+    setContext(newContext);
+  }, [extractUserContext]);
+  
+  // Wrapper for setModifiers that rebuilds context
+  const handleModifiersChange = useCallback((newModifiers: typeof modifiers) => {
+    setModifiers(newModifiers);
+    modifiersRef.current = newModifiers;
+    const fullContext = buildFullContext(userContextRef.current);
+    setContext(fullContext);
+  }, [setModifiers, buildFullContext]);
+  
+  // Individual setters for tone and length
+  const handleToneChange = useCallback((tone: typeof modifiers.tone) => {
+    handleModifiersChange({ tone, length: modifiersRef.current.length });
+  }, [handleModifiersChange]);
+  
+  const handleLengthChange = useCallback((length: typeof modifiers.length) => {
+    handleModifiersChange({ tone: modifiersRef.current.tone, length });
+  }, [handleModifiersChange]);
   
   // Fetch current chat data to get updated title
   const { data: currentChat } = useChatQuery(chatId);
@@ -136,18 +223,26 @@ export function ChatInterface({
         });
       }
 
+      // Get context and remove markers before sending to API
+      const contextWithMarkers = message.context || '';
+      const cleanContext = contextWithMarkers
+        .replaceAll(TONE_MARKER_START, '')
+        .replaceAll(TONE_MARKER_END, '')
+        .replaceAll(LENGTH_MARKER_START, '')
+        .replaceAll(LENGTH_MARKER_END, '')
+        .trim();
+
       // Send only the actual message text in parts (not combined with context)
-      // The backend will handle combining for AI, but store separately
+      // The backend will handle combining for AI, and store them separately
+      // Include context in metadata for immediate display (will match DB retrieval)
       sendMessage(
         { 
           text: message.text,
-          metadata: message.context ? { context: message.context } : undefined, // Add context to metadata
+          metadata: cleanContext ? { context: cleanContext } : undefined,
         },
         {
           body: {
-            tone: modifiersRef.current.tone,
-            length: modifiersRef.current.length,
-            context: message.context, // Send context separately to backend
+            context: cleanContext || undefined, // Send clean context to backend
           },
         },
       );
@@ -230,8 +325,6 @@ export function ChatInterface({
           aiRegenerate({
             messageId: messageId, // This is already the user message ID
             body: {
-              tone: modifiersRef.current.tone,
-              length: modifiersRef.current.length,
               context: messageContext, // Pass context for regeneration
             },
           });
@@ -301,8 +394,6 @@ export function ChatInterface({
         aiRegenerate({
           messageId: userMessage.id,
           body: {
-            tone: modifiersRef.current.tone,
-            length: modifiersRef.current.length,
             context: userContext, // Pass context for regeneration
           },
         });
@@ -377,15 +468,15 @@ export function ChatInterface({
       text={text}
       setText={setText}
       context={context}
-      setContext={setContext}
+      setContext={handleContextChange}
       useWebSearch={useWebSearch}
       setUseWebSearch={setUseWebSearch}
       useMicrophone={useMicrophone}
       setUseMicrophone={setUseMicrophone}
       tone={modifiers.tone}
-      setTone={(tone) => setModifiers({ tone, length: modifiers.length })}
+      setTone={handleToneChange}
       length={modifiers.length}
-      setLength={(length) => setModifiers({ tone: modifiers.tone, length })}
+      setLength={handleLengthChange}
       pinned={pinned}
       chatTitle={currentChat?.title || initialChat?.title}
       onSubmit={handleSubmit}
