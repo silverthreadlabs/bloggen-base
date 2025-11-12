@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
@@ -42,6 +42,7 @@ export function ChatInterface({
 
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
   const pendingSavesRef = useRef<Set<string>>(new Set());
+  const messagesInitializedRef = useRef(false);
 
   const { data: allChats } = useChats();
   
@@ -112,10 +113,12 @@ export function ChatInterface({
   });
 
   // Initialize messages from server data on mount (for existing chats)
-  if (messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+  // Use queueMicrotask to defer setState and avoid the "setState during render" warning
+  if (!messagesInitializedRef.current && messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+    messagesInitializedRef.current = true;
     const chatData = currentChat || initialChat;
     if (chatData?.messages) {
-      setMessages(chatData.messages);
+      queueMicrotask(() => setMessages(chatData.messages));
     }
   }
 
@@ -133,13 +136,13 @@ export function ChatInterface({
         });
       }
 
-      // Combine message and context for sending to AI
-      const combinedText = message.context 
-        ? `Context: ${message.context}\n\n${message.text}`
-        : message.text;
-
+      // Send only the actual message text in parts (not combined with context)
+      // The backend will handle combining for AI, but store separately
       sendMessage(
-        { text: combinedText },
+        { 
+          text: message.text,
+          metadata: message.context ? { context: message.context } : undefined, // Add context to metadata
+        },
         {
           body: {
             tone: modifiersRef.current.tone,
@@ -220,12 +223,16 @@ export function ChatInterface({
           // Remove the assistant message and all messages after it from local state
           setMessages(messagesUpToEdit);
 
+          // Extract context from the original message metadata (preserve it after edit)
+          const messageContext = (messages[messageIndex].metadata as { context?: string } | undefined)?.context;
+
           // Regenerate using the edited user message ID
           aiRegenerate({
             messageId: messageId, // This is already the user message ID
             body: {
               tone: modifiersRef.current.tone,
               length: modifiersRef.current.length,
+              context: messageContext, // Pass context for regeneration
             },
           });
 
@@ -287,12 +294,16 @@ export function ChatInterface({
         // Remove the assistant message and all messages after it
         setMessages(messages.slice(0, messageIndex));
 
+        // Extract context from the user message metadata
+        const userContext = (userMessage.metadata as { context?: string } | undefined)?.context;
+
         // Regenerate using the user message ID (the message before the assistant message)
         aiRegenerate({
           messageId: userMessage.id,
           body: {
             tone: modifiersRef.current.tone,
             length: modifiersRef.current.length,
+            context: userContext, // Pass context for regeneration
           },
         });
 
