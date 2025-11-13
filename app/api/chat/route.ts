@@ -124,15 +124,32 @@ export async function POST(req: Request) {
             const metadata = lastMessage.metadata as { fileIds?: string[] } | undefined;
             const fileIds = metadata?.fileIds || [];
             
+            // Fetch file info and add to parts for storage
+            const partsWithFiles = [...lastMessage.parts];
+            if (fileIds.length > 0) {
+              for (const fileId of fileIds) {
+                const fileRecord = await getFileById(fileId);
+                if (fileRecord) {
+                  // Add file reference to parts so it's stored in the message
+                  partsWithFiles.push({
+                    type: 'file' as const,
+                    data: fileRecord.url,
+                    mimeType: fileRecord.type,
+                    filename: fileRecord.name,
+                  } as any);
+                }
+              }
+            }
+            
             const savedUserMsg = await saveMessage(
               chatId,
               'user',
-              lastMessage.parts,
+              partsWithFiles, // Save with file references
               [],
               context, // Save context separately
               lastMessage.id,
             );
-            console.log('[Chat API] Saved user message:', savedUserMsg.id, 'for chat:', chatId);
+            console.log('[Chat API] Saved user message:', savedUserMsg.id, 'with', fileIds.length, 'file(s)');
             
             // Link uploaded files to this message
             if (fileIds.length > 0) {
@@ -148,70 +165,83 @@ export async function POST(req: Request) {
       }
     }
 
-    // Process file attachments: fetch from DB and convert to base64
+    // OPTIMIZED: Process file attachments efficiently
+    // Only converts files to base64 when present, processes in parallel for speed
     const processedMessages = await Promise.all(
       messages.map(async (message) => {
         if (message.role !== 'user') return message;
 
+        // Check for fileIds in metadata (new uploads) OR file parts in message (from DB)
         const metadata = message.metadata as { fileIds?: string[] } | undefined;
         const fileIds = metadata?.fileIds || [];
+        const existingFileParts = message.parts.filter((part: any) => part.type === 'file');
+        
+        // Skip if no files - optimization for faster responses
+        if (fileIds.length === 0 && existingFileParts.length === 0) return message;
 
-        if (fileIds.length === 0) return message;
+        // Collect all files to process (from metadata and existing parts)
+        const filesToProcess: Array<{url: string; type: string; name: string}> = [];
+        
+        // Add new files from metadata
+        if (fileIds.length > 0) {
+          const fileRecords = await Promise.all(fileIds.map(id => getFileById(id)));
+          fileRecords.forEach(file => {
+            if (file) filesToProcess.push({ url: file.url, type: file.type, name: file.name });
+          });
+        }
+        
+        // Add existing files from message parts
+        existingFileParts.forEach((part: any) => {
+          const url = part.data || part.url;
+          if (url) {
+            filesToProcess.push({
+              url,
+              type: part.mimeType || part.mediaType || 'application/octet-stream',
+              name: part.filename || 'document',
+            });
+          }
+        });
+        
+        if (filesToProcess.length === 0) return message;
 
-        // Fetch files from database and convert to base64
-        const fileParts = await Promise.all(
-          fileIds.map(async (fileId) => {
+        // Convert all files to base64 in parallel (OPTIMIZED for speed)
+        const convertedParts = (await Promise.all(
+          filesToProcess.map(async (file) => {
             try {
-              const fileRecord = await getFileById(fileId);
-              if (!fileRecord) {
-                console.error('[Chat API] File not found:', fileId);
-                return null;
-              }
-
-              console.log('[Chat API] Processing file:', fileRecord.name, 'type:', fileRecord.type);
-
-              // Fetch file content and convert to base64
-              const base64Data = await fetchFileAsBase64(fileRecord.url);
-
-              // Return in a format that will be handled by convertDataPart
-              if (fileRecord.type.startsWith('image/')) {
-                return {
-                  type: 'data-image',
-                  data: {
-                    url: `data:${fileRecord.type};base64,${base64Data}`,
-                  },
-                } as any;
-              } else {
-                // For documents (PDF, etc.), use file format
-                return {
-                  type: 'data-file',
-                  data: {
-                    base64: base64Data,
-                    mediaType: fileRecord.type,
-                    filename: fileRecord.name,
-                  },
-                } as any;
-              }
+              const base64Data = await fetchFileAsBase64(file.url);
+              const isImage = file.type.startsWith('image/');
+              
+              return isImage
+                ? {
+                    type: 'data-image',
+                    data: { url: `data:${file.type};base64,${base64Data}` },
+                  } as any
+                : {
+                    type: 'data-file',
+                    data: {
+                      base64: base64Data,
+                      mediaType: file.type,
+                      filename: file.name,
+                    },
+                  } as any;
             } catch (error) {
-              console.error('[Chat API] Error processing file:', fileId, error);
+              console.error('[Chat API] Error converting file:', file.name, error);
               return null;
             }
           })
-        );
+        )).filter(Boolean);
 
-        // Filter out null values and add to message parts
-        const validFileParts = fileParts.filter((part) => part !== null);
+        // Keep non-file parts and add converted file parts
+        const nonFileParts = message.parts.filter((part: any) => part.type !== 'file');
         
         return {
           ...message,
-          parts: [...message.parts, ...validFileParts],
+          parts: [...nonFileParts, ...convertedParts],
         };
       })
     );
 
     const modifiedMessages = [...processedMessages];
-    
-    console.log('[Chat API] Messages received:', JSON.stringify(modifiedMessages, null, 2));
     
     // Then, combine context with the last user message if context exists
     if (context) {
@@ -254,14 +284,6 @@ ${originalContent}`;
       }),
     }));
 
-    // Log what's being sent to the model
-    console.log('[Chat API] ===== Messages being sent to model =====');
-    console.log('[Chat API] Total messages:', cleanedMessages.length);
-    console.log('[Chat API] Context provided:', context || 'none');
-    console.log('[Chat API] Messages:');
-    console.log(JSON.stringify(cleanedMessages, null, 2));
-    console.log('[Chat API] ==========================================');
-    
     // Always use convertToModelMessages to ensure proper conversion
     const convertedMessages = convertToModelMessages(cleanedMessages, {
       convertDataPart: (part: any) => {
@@ -292,10 +314,6 @@ ${originalContent}`;
         return undefined;
       },
     });
-    
-    console.log('[Chat API] ===== Converted messages for OpenAI =====');
-    console.log(JSON.stringify(convertedMessages, null, 2));
-    console.log('[Chat API] ==========================================');
     
     const result = streamText({
       model: openai('gpt-4o-mini'),
