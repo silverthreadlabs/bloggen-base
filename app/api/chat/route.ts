@@ -127,7 +127,9 @@ export async function POST(req: Request) {
 
     const modifiedMessages = [...messages];
     
-    // First, combine context with the last user message if context exists
+    console.log('[Chat API] Messages received:', JSON.stringify(modifiedMessages, null, 2));
+    
+    // Then, combine context with the last user message if context exists
     if (context) {
       const lastMessageIndex = modifiedMessages.length - 1;
       const lastMessage = modifiedMessages[lastMessageIndex];
@@ -144,6 +146,7 @@ ${context}
 
 ${originalContent}`;
 
+        // Update text parts with context, preserve other parts (like images)
         modifiedMessages[lastMessageIndex] = {
           ...lastMessage,
           parts: lastMessage.parts.map((part) =>
@@ -162,10 +165,35 @@ ${originalContent}`;
     console.log(JSON.stringify(modifiedMessages, null, 2));
     console.log('[Chat API] ==========================================');
     
+    // Convert messages using convertToModelMessages with convertDataPart
+    const hasImages = modifiedMessages.some(msg => 
+      msg.parts?.some((part: any) => part.type === 'data-image')
+    );
+    
+    const convertedMessages = hasImages 
+      ? convertToModelMessages(modifiedMessages, {
+          convertDataPart: (part: any) => {
+            // Convert data-image parts to file parts for the model
+            if (part.type === 'data-image') {
+              return {
+                type: 'file',
+                data: part.data.url, // URL string
+                mediaType: 'image/jpeg',
+              };
+            }
+            return undefined;
+          },
+        })
+      : convertToModelMessages(modifiedMessages);
+    
+    console.log('[Chat API] ===== Converted messages for OpenAI =====');
+    console.log(JSON.stringify(convertedMessages, null, 2));
+    console.log('[Chat API] ==========================================');
+    
     const result = streamText({
       model: openai('gpt-4o-mini'),
       system: getSystemPrompt('default'),
-      messages: convertToModelMessages(modifiedMessages),
+      messages: convertedMessages,
       // Don't save in onFinish - let client save with correct message ID
     });
 

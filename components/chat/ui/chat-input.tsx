@@ -26,6 +26,8 @@ type Props = {
   context: string;
   onTextChangeAction: (text: string) => void;
   onContextChangeAction: (context: string) => void;
+  imageUrl: string;
+  onImageUrlChangeAction: (imageUrl: string) => void;
   useWebSearch: boolean;
   onWebSearchChangeAction: (use: boolean) => void;
   useMicrophone: boolean;
@@ -45,6 +47,8 @@ export function ChatInput({
   context,
   onTextChangeAction,
   onContextChangeAction,
+  imageUrl,
+  onImageUrlChangeAction,
   useWebSearch,
   onWebSearchChangeAction,
   useMicrophone,
@@ -73,6 +77,14 @@ export function ChatInput({
           placeholder="Additional instructions (optional)"
           className="min-h-12 max-h-24 mb-2 text-sm"
           name="context"
+        />
+        <PromptInputTextarea
+          onChange={(event) => onImageUrlChangeAction(event.target.value)}
+          value={imageUrl}
+          disabled={disabled}
+          placeholder="Image URL (optional)"
+          className="min-h-12 max-h-16 mb-2 text-sm"
+          name="imageUrl"
         />
         <PromptInputTextarea
           onChange={(event) => onTextChangeAction(event.target.value)}

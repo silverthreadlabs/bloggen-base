@@ -53,7 +53,7 @@ export function MessageList({
   return (
     <>
       {messages.map((message, index) => {
-        const messageText = message.parts
+        const messageText = (message.parts || [])
           .filter((part) => part.type === 'text')
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
@@ -116,6 +116,37 @@ export function MessageList({
                         </div>
                       </div>
                     )}
+                    
+                    {/* Display images from message parts */}
+                    {(message.parts || [])
+                      .filter((part) => {
+                        // Support both 'image' type and 'data-image' type
+                        const anyPart = part as any;
+                        const imageUrl = anyPart.image || anyPart.data?.url;
+                        // Validate it's a valid HTTPS URL
+                        if (!imageUrl || typeof imageUrl !== 'string') return false;
+                        try {
+                          const url = new URL(imageUrl);
+                          return url.protocol === 'https:';
+                        } catch {
+                          return false;
+                        }
+                      })
+                      .map((part, idx) => {
+                        const anyPart = part as any;
+                        const imageUrl = anyPart.image || anyPart.data?.url;
+                        return (
+                          <div key={idx} className="mb-3 relative w-full max-w-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={imageUrl}
+                              alt="User provided content"
+                              className="max-w-full h-auto max-h-96 rounded-lg border border-border object-contain"
+                            />
+                          </div>
+                        );
+                      })}
+                    
                     <Response isStreaming={isLastAssistant && isLoading}>
                       {messageText}
                     </Response>

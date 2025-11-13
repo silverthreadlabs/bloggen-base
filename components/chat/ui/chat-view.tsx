@@ -25,6 +25,8 @@ type Props = {
   setText: (text: string) => void;
   context: string;
   setContext: (context: string) => void;
+  imageUrl: string;
+  setImageUrl: (imageUrl: string) => void;
   useWebSearch: boolean;
   setUseWebSearch: (use: boolean) => void;
   useMicrophone: boolean;
@@ -58,6 +60,8 @@ export function ChatView({
   setText,
   context,
   setContext,
+  imageUrl,
+  setImageUrl,
   useWebSearch,
   setUseWebSearch,
   useMicrophone,
@@ -146,6 +150,8 @@ export function ChatView({
             context={context}
             onTextChangeAction={setText}
             onContextChangeAction={setContext}
+            imageUrl={imageUrl}
+            onImageUrlChangeAction={setImageUrl}
             useWebSearch={useWebSearch}
             onWebSearchChangeAction={setUseWebSearch}
             useMicrophone={useMicrophone}

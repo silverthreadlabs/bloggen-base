@@ -40,6 +40,7 @@ export function ChatInterface({
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [context, setContext] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
 
@@ -232,22 +233,38 @@ export function ChatInterface({
         .replaceAll(LENGTH_MARKER_END, '')
         .trim();
 
-      // Send only the actual message text in parts (not combined with context)
-      // The backend will handle combining for AI, and store them separately
-      // Include context in metadata for immediate display (will match DB retrieval)
+      // Send message normally - let backend handle image addition
+      console.log('[Frontend] Sending message:', { 
+        text: message.text, 
+        imageUrl: message.imageUrl?.trim() || undefined,
+        hasImageUrl: !!message.imageUrl?.trim()
+      });
+      
+      // Build message with parts including image if provided
+      const messageParts: any[] = [{ type: 'text', text: message.text }];
+      
+      if (message.imageUrl?.trim()) {
+        messageParts.push({
+          type: 'data-image',
+          data: { url: message.imageUrl.trim() },
+        });
+      }
+      
       sendMessage(
         { 
-          text: message.text,
+          parts: messageParts,
           metadata: cleanContext ? { context: cleanContext } : undefined,
-        },
+        } as any,
         {
           body: {
-            context: cleanContext || undefined, // Send clean context to backend
+            context: cleanContext || undefined,
           },
         },
       );
+      
       setText('');
       setContext('');
+      setImageUrl('');
     },
     [sendMessage, isProcessing],
   );
@@ -469,6 +486,8 @@ export function ChatInterface({
       setText={setText}
       context={context}
       setContext={handleContextChange}
+      imageUrl={imageUrl}
+      setImageUrl={setImageUrl}
       useWebSearch={useWebSearch}
       setUseWebSearch={setUseWebSearch}
       useMicrophone={useMicrophone}

@@ -409,6 +409,7 @@ export const PromptInputActionAddAttachments = ({
 export type PromptInputMessage = {
   text?: string;
   context?: string;
+  imageUrl?: string;
   files?: FileUIPart[];
 };
 
@@ -691,6 +692,13 @@ export const PromptInput = ({
           return (formData.get('context') as string) || '';
         })();
 
+    const imageUrl = usingProvider
+      ? ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('imageUrl') as string) || '';
+        })();
+
     // Reset form immediately after capturing text to avoid race condition
     // where user input during async blob conversion would be lost
     if (!usingProvider) {
@@ -710,7 +718,7 @@ export const PromptInput = ({
       }),
     ).then((convertedFiles: FileUIPart[]) => {
       try {
-        const result = onSubmit({ text, context, files: convertedFiles }, event);
+        const result = onSubmit({ text, context, imageUrl, files: convertedFiles }, event);
 
         // Handle both sync and async onSubmit
         if (result instanceof Promise) {
