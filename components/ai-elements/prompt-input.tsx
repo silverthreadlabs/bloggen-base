@@ -89,8 +89,11 @@ export type TextInputContext = {
   clear: () => void;
 };
 
+
+
 export type PromptInputControllerProps = {
   textInput: TextInputContext;
+  contextInput: TextInputContext;
   attachments: AttachmentsContext;
   /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
   __registerFileInput: (
@@ -148,6 +151,10 @@ export function PromptInputProvider({
   // ----- textInput state
   const [textInput, setTextInput] = useState(initialTextInput);
   const clearInput = useCallback(() => setTextInput(''), []);
+
+  // ----- contextInput state
+  const [contextInput, setContextInput] = useState('');
+  const clearContext = useCallback(() => setContextInput(''), []);
 
   // ----- attachments state (global when wrapped)
   const [attachements, setAttachements] = useState<
@@ -219,10 +226,15 @@ export function PromptInputProvider({
         setInput: setTextInput,
         clear: clearInput,
       },
+      contextInput: {
+        value: contextInput,
+        setInput: setContextInput,
+        clear: clearContext,
+      },
       attachments,
       __registerFileInput,
     }),
-    [textInput, clearInput, attachments, __registerFileInput],
+    [textInput, clearInput, contextInput, clearContext, attachments, __registerFileInput],
   );
 
   return (
@@ -397,6 +409,8 @@ export const PromptInputActionAddAttachments = ({
 
 export type PromptInputMessage = {
   text?: string;
+  context?: string;
+  imageUrl?: string;
   files?: FileUIPart[];
 };
 
@@ -518,6 +532,8 @@ export const PromptInput = ({
             url: URL.createObjectURL(file),
             mediaType: file.type,
             filename: file.name,
+            // Store the actual File object for later upload
+            __file: file as any,
           });
         }
         return prev.concat(next);
@@ -638,17 +654,6 @@ export const PromptInput = ({
     }
   };
 
-  const convertBlobUrlToDataUrl = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
   const ctx = useMemo<AttachmentsContext>(
     () => ({
       files: files.map((item) => ({ ...item, id: item.id })),
@@ -661,7 +666,7 @@ export const PromptInput = ({
     [files, add, remove, clear, openFileDialog],
   );
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -671,51 +676,58 @@ export const PromptInput = ({
           const formData = new FormData(form);
           return (formData.get('message') as string) || '';
         })();
+    
+    const context = usingProvider
+      ? controller.contextInput?.value || ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('context') as string) || '';
+        })();
 
-    // Reset form immediately after capturing text to avoid race condition
-    // where user input during async blob conversion would be lost
+    const imageUrl = usingProvider
+      ? ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('imageUrl') as string) || '';
+        })();
+
+    // Reset form immediately after capturing text
     if (!usingProvider) {
       form.reset();
     }
 
-    // Convert blob URLs to data URLs asynchronously
-    Promise.all(
-      files.map(async ({ id, ...item }) => {
-        if (item.url?.startsWith('blob:')) {
-          return {
-            ...item,
-            url: await convertBlobUrlToDataUrl(item.url),
-          };
-        }
-        return item;
-      }),
-    ).then((convertedFiles: FileUIPart[]) => {
-      try {
-        const result = onSubmit({ text, files: convertedFiles }, event);
+    try {
+      // Pass files with blob URLs - they'll be uploaded during message submission
+      const filesWithBlobUrls: FileUIPart[] = files.map(({ id, __file, ...item }) => ({
+        ...item,
+        // Keep the blob URL temporarily for preview
+        // The actual File object is attached for upload
+        __file: __file as any,
+      }));
 
-        // Handle both sync and async onSubmit
-        if (result instanceof Promise) {
-          result
-            .then(() => {
-              clear();
-              if (usingProvider) {
-                controller.textInput.clear();
-              }
-            })
-            .catch(() => {
-              // Don't clear on error - user may want to retry
-            });
-        } else {
-          // Sync function completed without throwing, clear attachments
-          clear();
-          if (usingProvider) {
-            controller.textInput.clear();
+      const result = onSubmit({ text, context, imageUrl, files: filesWithBlobUrls }, event);
+
+      // Handle both sync and async onSubmit
+      if (result instanceof Promise) {
+        await result;
+        clear();
+        if (usingProvider) {
+          controller.textInput.clear();
+          if (controller.contextInput) {
+            controller.contextInput.clear();
           }
         }
-      } catch (error) {
-        // Don't clear on error - user may want to retry
+      } else {
+        // Sync function completed without throwing, clear attachments
+        clear();
+        if (usingProvider) {
+          controller.textInput.clear();
+        }
       }
-    });
+    } catch (error) {
+      console.error('Submit error:', error);
+      // Don't clear on error - user may want to retry
+    }
   };
 
   // Render with or without local provider

@@ -15,7 +15,7 @@ export type ChatWithMessages = Chat & {
 
 export type CreateMessagePayload = {
   role: 'user' | 'assistant' | 'system';
-  content: string;
   parts: any[];
   attachments?: any[];
+  context?: string;
 };

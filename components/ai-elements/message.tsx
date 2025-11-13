@@ -26,7 +26,8 @@ const messageContentVariants = cva(
       variant: {
         contained: [
           'max-w-[80%] px-4 py-3',
-          'group-[.is-user]:bg-primary-solid group-[.is-user]:text-primary-on-primary',
+          // Use a softer background for user messages to reduce visual harshness
+          'group-[.is-user]:bg-primary-bg group-[.is-user]:text-primary-text-contrast',
           'group-[.is-assistant]:bg-secondary-bg group-[.is-assistant]:text-canvas-text-contrast',
         ],
         flat: [

@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1761912239492,
-      "tag": "0000_worried_violations",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1762165470569,
-      "tag": "0001_zippy_paper_doll",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1762253966364,
-      "tag": "0002_goofy_night_thrasher",
+      "when": 1763067066374,
+      "tag": "0000_silky_paper_doll",
       "breakpoints": true
     }
   ]

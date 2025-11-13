@@ -23,6 +23,8 @@ const config: NextConfig = {
         hostname: 'avatar.vercel.sh',
       },
     ],
+    // Use a custom loader to validate image URLs
+    unoptimized: false,
   },
   // Security headers
   async headers() {

@@ -9,6 +9,9 @@ import { Response } from '@/components/ai-elements/response';
 import { useChatActions } from '@/lib/hooks/chat';
 import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from '../utils/message-utils';
+import { FileAttachmentsGrid } from './file-attachment-display';
+import { cn } from '@/lib/utils';
+import type { FileUIPart } from 'ai';
 
 type Props = {
   messages: UIMessage[];
@@ -52,10 +55,37 @@ export function MessageList({
   return (
     <>
       {messages.map((message, index) => {
-        const messageText = message.parts
+        const messageText = (message.parts || [])
           .filter((part) => part.type === 'text')
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
+
+        // Extract file attachments from message parts
+        const fileAttachments = (message.parts || [])
+          .filter((part) => {
+            const anyPart = part as any;
+            // Handle both regular file parts and data-file parts
+            return (part.type === 'file' || part.type === 'data-file') && (anyPart.data || anyPart.url);
+          })
+          .map((part) => {
+            const anyPart = part as any;
+            // For data-file parts (from AI SDK conversion)
+            if (part.type === 'data-file' && anyPart.data) {
+              return {
+                type: 'file' as const,
+                url: anyPart.data.url || anyPart.data,
+                mediaType: anyPart.data.mediaType || anyPart.mediaType || 'application/octet-stream',
+                filename: anyPart.data.filename || anyPart.filename || 'Attachment',
+              } as FileUIPart;
+            }
+            // For regular file parts
+            return {
+              type: 'file' as const,
+              url: anyPart.url || anyPart.data,
+              mediaType: anyPart.mediaType || 'application/octet-stream',
+              filename: anyPart.filename || 'Attachment',
+            } as FileUIPart;
+          });
 
         const isLastAssistant = isLastAssistantMessage(
           message,
@@ -65,10 +95,13 @@ export function MessageList({
         );
 
         const isEditing = editingId === message.id;
+        const messageContext = (
+          message.metadata as { context?: string } | undefined
+        )?.context;
 
         return (
           <Message key={message.id} from={message.role}>
-            <div>
+            <div className={cn('flex flex-col', message.role === 'user' ? 'items-end' : 'items-start')} >
               <MessageContent>
                 {isEditing ? (
                   <div className="space-y-2">
@@ -98,7 +131,62 @@ export function MessageList({
                     </div>
                   </div>
                 ) : (
-                  <Response>{messageText}</Response>
+                  <>
+                    {messageContext && (
+                      <div className="mb-3 p-3 bg-muted/50 rounded-md border border-border/50">
+                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                          Instructions:
+                        </div>
+                        <div className="text-sm text-muted-foreground/90 whitespace-pre-line">
+                          {messageContext
+                            .replace(/\[tone-instruction\]|\[\/tone-instruction\]/g, '')
+                            .replace(/\[length-instruction\]|\[\/length-instruction\]/g, '')
+                            .trim()}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Display file attachments */}
+                    {fileAttachments.length > 0 && (
+                      <div className="mb-3">
+                        <FileAttachmentsGrid files={fileAttachments} />
+                      </div>
+                    )}
+                    
+                    {/* Display images from message parts */}
+                    {(message.parts || [])
+                      .filter((part) => {
+                        // Support both 'image' type and 'data-image' type
+                        const anyPart = part as any;
+                        const imageUrl = anyPart.image || anyPart.data?.url;
+                        // Validate it's a valid HTTPS URL
+                        if (!imageUrl || typeof imageUrl !== 'string') return false;
+                        try {
+                          const url = new URL(imageUrl);
+                          return url.protocol === 'https:';
+                        } catch {
+                          return false;
+                        }
+                      })
+                      .map((part, idx) => {
+                        const anyPart = part as any;
+                        const imageUrl = anyPart.image || anyPart.data?.url;
+                        return (
+                          <div key={idx} className="mb-3 relative w-full max-w-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={imageUrl}
+                              alt="User provided content"
+                              className="max-w-full h-auto max-h-96 rounded-lg border border-border object-contain"
+                            />
+                          </div>
+                        );
+                      })}
+                    
+                    <Response isStreaming={isLastAssistant && isLoading}>
+                      {messageText}
+                    </Response>
+                  </>
                 )}
               </MessageContent>
 

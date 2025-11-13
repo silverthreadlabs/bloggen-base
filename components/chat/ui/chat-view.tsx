@@ -23,6 +23,10 @@ type Props = {
   isProcessing?: boolean;
   text: string;
   setText: (text: string) => void;
+  context: string;
+  setContext: (context: string) => void;
+  imageUrl: string;
+  setImageUrl: (imageUrl: string) => void;
   useWebSearch: boolean;
   setUseWebSearch: (use: boolean) => void;
   useMicrophone: boolean;
@@ -54,6 +58,10 @@ export function ChatView({
   isProcessing = false,
   text,
   setText,
+  context,
+  setContext,
+  imageUrl,
+  setImageUrl,
   useWebSearch,
   setUseWebSearch,
   useMicrophone,
@@ -139,7 +147,11 @@ export function ChatView({
         <div className="mx-auto w-full max-w-4xl px-4 pb-4">
           <ChatInput
             text={text}
+            context={context}
             onTextChangeAction={setText}
+            onContextChangeAction={setContext}
+            imageUrl={imageUrl}
+            onImageUrlChangeAction={setImageUrl}
             useWebSearch={useWebSearch}
             onWebSearchChangeAction={setUseWebSearch}
             useMicrophone={useMicrophone}
