@@ -6,7 +6,7 @@ import type { FileUIPart } from 'ai';
 import { cn } from '@/lib/utils';
 
 type FileAttachmentDisplayProps = {
-  file: FileUIPart;
+  file: FileUIPart & { __uploading?: boolean; __file?: File };
   className?: string;
 };
 
@@ -17,10 +17,43 @@ export function FileAttachmentDisplay({
   const isImage = file.mediaType?.startsWith('image/');
   const filename = file.filename || 'Attachment';
   const fileUrl = file.url || '';
+  const isUploading = file.__uploading;
 
-  // Check if it's a data URL (base64) or regular URL
+  // Check if it's a data URL (base64) or regular URL or blob URL
   const isDataUrl = fileUrl.startsWith('data:');
-  const isValidUrl = fileUrl.startsWith('http') || isDataUrl;
+  const isBlobUrl = fileUrl.startsWith('blob:');
+  const isValidUrl = fileUrl.startsWith('http') || isDataUrl || isBlobUrl;
+
+  // Show uploading state
+  if (isUploading && !isValidUrl && file.__file) {
+    const fileSize = file.__file.size;
+    const fileSizeKB = Math.round(fileSize / 1024);
+    const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+    const sizeDisplay = fileSize > 1024 * 1024 ? `${fileSizeMB} MB` : `${fileSizeKB} KB`;
+
+    return (
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 opacity-70',
+          className,
+        )}
+      >
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
+          {isImage ? (
+            <ImageIcon className="size-5 text-primary" />
+          ) : (
+            <FileIcon className="size-5 text-primary" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-sm">{filename}</p>
+          <p className="truncate text-muted-foreground text-xs">
+            {sizeDisplay}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isValidUrl) {
     return (
@@ -44,14 +77,17 @@ export function FileAttachmentDisplay({
   }
 
   if (isImage && fileUrl) {
+    const shouldUseImgTag = isDataUrl || isBlobUrl;
+    
     return (
       <div
         className={cn(
           'group relative overflow-hidden rounded-lg border border-canvas-border bg-canvas-bg',
+          isUploading && 'opacity-70',
           className,
         )}
       >
-        {isDataUrl ? (
+        {shouldUseImgTag ? (
           <div className="block">
             <div className="relative h-48 w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -91,16 +127,8 @@ export function FileAttachmentDisplay({
   }
 
   // Non-image file display
-  return (
-    <a
-      href={fileUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 transition-colors hover:bg-secondary-bg-hover',
-        className,
-      )}
-    >
+  const FileContent = (
+    <>
       <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
         <FileIcon className="size-5 text-primary" />
       </div>
@@ -112,6 +140,33 @@ export function FileAttachmentDisplay({
           </p>
         )}
       </div>
+    </>
+  );
+
+  if (isUploading) {
+    return (
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 opacity-70',
+          className,
+        )}
+      >
+        {FileContent}
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={fileUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 transition-colors hover:bg-secondary-bg-hover',
+        className,
+      )}
+    >
+      {FileContent}
     </a>
   );
 }

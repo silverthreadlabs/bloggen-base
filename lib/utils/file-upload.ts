@@ -1,4 +1,5 @@
 import type { FileAttachment } from '@/components/chat/types';
+import { allowedTypes } from '@/lib/constants';
 
 /**
  * Upload a file to the server and get back the file metadata with URL
@@ -73,22 +74,74 @@ export function getFileIcon(type: string): string {
  */
 export function validateFile(file: File): { valid: boolean; error?: string } {
   const maxFileSize = 20 * 1024 * 1024; // 20MB
-  const allowedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
-    'text/plain',
-    'text/markdown',
-    'text/csv',
-    'application/json',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'image/svg+xml',
-  ];
+  // const allowedTypes = [
+  //   // PDF Documents
+  //   'application/pdf',
+    
+  //   // Microsoft Office Documents
+  //   'application/msword', // .doc
+  //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  //   'application/vnd.ms-powerpoint', // .ppt
+  //   'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  //   'application/vnd.ms-excel', // .xls
+  //   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    
+  //   // Text Files
+  //   'text/plain', // .txt
+  //   'application/rtf', // .rtf
+  //   'text/markdown', // .md
+    
+  //   // OpenDocument Files
+  //   'application/vnd.oasis.opendocument.text', // .odt
+  //   'application/vnd.oasis.opendocument.spreadsheet', // .ods
+  //   'application/vnd.oasis.opendocument.presentation', // .odp
+    
+  //   // Data Files
+  //   'text/csv', // .csv
+  //   'text/tab-separated-values', // .tsv
+  //   'application/json', // .json
+  //   'application/x-yaml', // .yaml
+  //   'text/yaml', // .yaml, .yml
+  //   'application/xml', // .xml
+  //   'text/xml', // .xml
+  //   'text/html', // .html, .htm
+    
+  //   // Programming Languages
+  //   'text/javascript', // .js
+  //   'application/javascript', // .js
+  //   'text/typescript', // .ts
+  //   'application/typescript', // .ts
+  //   'text/jsx', // .jsx
+  //   'text/tsx', // .tsx
+  //   'text/x-python', // .py
+  //   'text/python', // .py
+  //   'text/x-java-source', // .java
+  //   'text/x-c', // .c
+  //   'text/x-c++src', // .cpp
+  //   'text/x-chdr', // .h
+  //   'text/x-c++hdr', // .hpp
+  //   'text/x-csharp', // .cs
+  //   'text/x-php', // .php
+  //   'application/x-httpd-php', // .php
+  //   'text/x-ruby', // .rb
+  //   'text/x-go', // .go
+  //   'text/x-rustsrc', // .rs
+  //   'text/x-swift', // .swift
+  //   'text/x-kotlin', // .kt
+  //   'text/x-scala', // .scala
+  //   'text/x-shellscript', // .sh, .bash
+  //   'application/x-sh', // .sh
+  //   'application/x-bash', // .bash
+    
+  //   // Images
+  //   'image/jpeg', // .jpg, .jpeg
+  //   'image/png', // .png
+  //   'image/gif', // .gif
+  //   'image/webp', // .webp
+  //   'image/svg+xml', // .svg
+  //   'image/heic', // .heic
+  //   'image/heif', // .heif
+  // ];
 
   if (file.size > maxFileSize) {
     return { valid: false, error: 'File size exceeds 20MB limit' };

@@ -7,6 +7,7 @@ import type { File as DBFile } from '@/lib/db/schema';
 import { PromptInputActionMenuItem } from '@/components/ai-elements/prompt-input';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { allowedTypes } from '@/lib/constants';
 
 export type FileAttachment = DBFile & {
   id: string;
@@ -34,33 +35,80 @@ export function useFileUploads(): UseFileUploadsReturn {
       return;
     }
 
-    // Validate file type
-    const allowedTypes = [
-      // Documents
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/vnd.ms-powerpoint',
-      'text/plain',
-      'text/markdown',
-      'text/csv',
-      'application/json',
-      'text/rtf',
-      // Images
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'image/svg+xml',
-      'image/bmp',
-      'image/tiff',
-    ];
+    // Validate file type - comprehensive list of supported document, text, code, and image files
+    // const allowedTypes = [
+    //   // PDF Documents
+    //   'application/pdf',
+      
+    //   // Microsoft Office Documents
+    //   'application/msword', // .doc
+    //   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    //   'application/vnd.ms-powerpoint', // .ppt
+    //   'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+    //   'application/vnd.ms-excel', // .xls
+    //   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      
+    //   // Text Files
+    //   'text/plain', // .txt
+    //   'application/rtf', // .rtf
+    //   'text/markdown', // .md
+      
+    //   // OpenDocument Files
+    //   'application/vnd.oasis.opendocument.text', // .odt
+    //   'application/vnd.oasis.opendocument.spreadsheet', // .ods
+    //   'application/vnd.oasis.opendocument.presentation', // .odp
+      
+    //   // Data Files
+    //   'text/csv', // .csv
+    //   'text/tab-separated-values', // .tsv
+    //   'application/json', // .json
+    //   'application/x-yaml', // .yaml
+    //   'text/yaml', // .yaml, .yml
+    //   'application/xml', // .xml
+    //   'text/xml', // .xml
+    //   'text/html', // .html, .htm
+      
+    //   // Programming Languages
+    //   'text/javascript', // .js
+    //   'application/javascript', // .js
+    //   'text/typescript', // .ts
+    //   'application/typescript', // .ts
+    //   'text/jsx', // .jsx
+    //   'text/tsx', // .tsx
+    //   'text/x-python', // .py
+    //   'text/python', // .py
+    //   'text/x-java-source', // .java
+    //   'text/x-c', // .c
+    //   'text/x-c++src', // .cpp
+    //   'text/x-chdr', // .h
+    //   'text/x-c++hdr', // .hpp
+    //   'text/x-csharp', // .cs
+    //   'text/x-php', // .php
+    //   'application/x-httpd-php', // .php
+    //   'text/x-ruby', // .rb
+    //   'text/x-go', // .go
+    //   'text/x-rustsrc', // .rs
+    //   'text/x-swift', // .swift
+    //   'text/x-kotlin', // .kt
+    //   'text/x-scala', // .scala
+    //   'text/x-shellscript', // .sh, .bash
+    //   'application/x-sh', // .sh
+    //   'application/x-bash', // .bash
+      
+    //   // Images
+    //   'image/jpeg', // .jpg, .jpeg
+    //   'image/png', // .png
+    //   'image/gif', // .gif
+    //   'image/webp', // .webp
+    //   'image/svg+xml', // .svg
+    //   'image/bmp', // .bmp
+    //   'image/tiff', // .tiff
+    //   'image/heic', // .heic
+    //   'image/heif', // .heif
+    // ];
 
     if (!allowedTypes.includes(fileToUpload.type)) {
-      toast.error('File type not supported. Supported types: PDF, Word docs, Excel sheets, PowerPoint, text files, images');
+      toast.error('File type not supported. Only the following file types are allowed: PDF, Word documents (DOC/DOCX), PowerPoint (PPT/PPTX), Excel (XLSX), text files (TXT), Markdown (MD), and images (JPEG/PNG/JPG/SVG)');
       return;
     }
 
@@ -71,13 +119,12 @@ export function useFileUploads(): UseFileUploadsReturn {
       id: tempId,
       name: fileToUpload.name,
       size: fileToUpload.size,
-      mediaType: fileToUpload.type,
+      type: fileToUpload.type,
       url: '',
       localUrl,
       userId: '',
-      chatId: chatId || null,
+      messageId: chatId || null,
       createdAt: new Date(),
-      updatedAt: new Date(),
       isUploading: true,
     };
 
@@ -164,8 +211,32 @@ function getFileTypeDisplay(mediaType: string): string {
   if (mediaType.includes('word') || mediaType === 'application/msword') return 'Word document';
   if (mediaType.includes('sheet') || mediaType.includes('excel')) return 'Excel spreadsheet';
   if (mediaType.includes('presentation') || mediaType.includes('powerpoint')) return 'PowerPoint presentation';
+  if (mediaType.includes('opendocument.text')) return 'OpenDocument text';
+  if (mediaType.includes('opendocument.spreadsheet')) return 'OpenDocument spreadsheet';
+  if (mediaType.includes('opendocument.presentation')) return 'OpenDocument presentation';
   if (mediaType === 'text/csv') return 'CSV file';
+  if (mediaType === 'text/tab-separated-values') return 'TSV file';
   if (mediaType === 'application/json') return 'JSON file';
+  if (mediaType.includes('yaml')) return 'YAML file';
+  if (mediaType.includes('xml')) return 'XML file';
+  if (mediaType === 'text/html') return 'HTML file';
+  if (mediaType === 'application/rtf') return 'RTF document';
+  if (mediaType === 'text/markdown') return 'Markdown file';
+  if (mediaType === 'text/javascript' || mediaType === 'application/javascript') return 'JavaScript file';
+  if (mediaType.includes('typescript')) return 'TypeScript file';
+  if (mediaType.includes('python')) return 'Python file';
+  if (mediaType.includes('java')) return 'Java file';
+  if (mediaType.includes('c++') || mediaType.includes('cpp')) return 'C++ file';
+  if (mediaType.includes('c') && !mediaType.includes('c++')) return 'C file';
+  if (mediaType.includes('csharp')) return 'C# file';
+  if (mediaType.includes('php')) return 'PHP file';
+  if (mediaType.includes('ruby')) return 'Ruby file';
+  if (mediaType.includes('go')) return 'Go file';
+  if (mediaType.includes('rust')) return 'Rust file';
+  if (mediaType.includes('swift')) return 'Swift file';
+  if (mediaType.includes('kotlin')) return 'Kotlin file';
+  if (mediaType.includes('scala')) return 'Scala file';
+  if (mediaType.includes('shell') || mediaType.includes('bash') || mediaType.includes('sh')) return 'Shell script';
   if (mediaType.startsWith('text/')) return 'Text file';
   return 'File';
 }
@@ -208,7 +279,7 @@ export function FileUploadAction({
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.rtf,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.tiff"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx,.txt,.md,.jpg,.jpeg,.png,.svg"
         multiple={multiple}
         onChange={handleFileSelect}
         disabled={disabled}
@@ -270,7 +341,7 @@ export function FileUploadButton({
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.rtf,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.tiff"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx,.txt,.md,.jpg,.jpeg,.png,.svg"
         multiple={multiple}
         onChange={handleFileSelect}
         disabled={disabled}
@@ -322,13 +393,33 @@ export function FileAttachmentDisplay({
     if (mediaType.includes('word') || mediaType === 'application/msword') return '📝';
     if (mediaType.includes('sheet') || mediaType.includes('excel')) return '📊';
     if (mediaType.includes('presentation') || mediaType.includes('powerpoint')) return '📋';
-    if (mediaType === 'text/csv') return '📊';
+    if (mediaType.includes('opendocument')) return '📋';
+    if (mediaType === 'text/csv' || mediaType === 'text/tab-separated-values') return '📊';
     if (mediaType === 'application/json') return '🔧';
+    if (mediaType.includes('yaml')) return '⚙️';
+    if (mediaType.includes('xml')) return '📋';
+    if (mediaType === 'text/html') return '🌐';
+    if (mediaType === 'text/markdown') return '📝';
+    if (mediaType === 'text/javascript' || mediaType === 'application/javascript') return '📜';
+    if (mediaType.includes('typescript')) return '📜';
+    if (mediaType.includes('python')) return '🐍';
+    if (mediaType.includes('java')) return '☕';
+    if (mediaType.includes('c++') || mediaType.includes('cpp')) return '⚡';
+    if (mediaType.includes('c') && !mediaType.includes('c++')) return '⚡';
+    if (mediaType.includes('csharp')) return '💎';
+    if (mediaType.includes('php')) return '🐘';
+    if (mediaType.includes('ruby')) return '💎';
+    if (mediaType.includes('go')) return '🐹';
+    if (mediaType.includes('rust')) return '🦀';
+    if (mediaType.includes('swift')) return '🐦';
+    if (mediaType.includes('kotlin')) return '🎯';
+    if (mediaType.includes('scala')) return '⚡';
+    if (mediaType.includes('shell') || mediaType.includes('bash') || mediaType.includes('sh')) return '🐚';
     if (mediaType.startsWith('text/')) return '📄';
     return '📎';
   };
 
-  const isImage = file.mediaType.startsWith('image/');
+  const isImage = file.type.startsWith('image/');
   const previewUrl = file.localUrl || file.url;
 
   return (
@@ -357,7 +448,7 @@ export function FileAttachmentDisplay({
           {file.isUploading ? (
             <div className="size-4 animate-spin rounded-full border border-foreground border-t-transparent" />
           ) : (
-            <span className="text-lg">{getFileEmoji(file.mediaType)}</span>
+            <span className="text-lg">{getFileEmoji(file.type)}</span>
           )}
         </div>
       )}
@@ -365,7 +456,7 @@ export function FileAttachmentDisplay({
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium">{file.name}</p>
         <p className="text-xs text-muted-foreground">
-          {formatFileSize(file.size)} • {getFileTypeDisplay(file.mediaType)}
+          {formatFileSize(file.size)} • {getFileTypeDisplay(file.type)}
         </p>
       </div>
 

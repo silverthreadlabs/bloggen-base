@@ -218,27 +218,31 @@ export function ChatInterface({
     async (message: PromptInputMessage) => {
       if (!message.text?.trim() || isProcessing) return;
 
-      try {
-        const contextWithMarkers = message.context || '';
-        const cleanContext = contextWithMarkers
-          .replaceAll(TONE_MARKER_START, '')
-          .replaceAll(TONE_MARKER_END, '')
-          .replaceAll(LENGTH_MARKER_START, '')
-          .replaceAll(LENGTH_MARKER_END, '')
-          .trim();
+      const contextWithMarkers = message.context || '';
+      const cleanContext = contextWithMarkers
+        .replaceAll(TONE_MARKER_START, '')
+        .replaceAll(TONE_MARKER_END, '')
+        .replaceAll(LENGTH_MARKER_START, '')
+        .replaceAll(LENGTH_MARKER_END, '')
+        .trim();
 
-        const messageParts: any[] = [{ type: 'text', text: message.text }];
-        const fileIds: string[] = [];
+      const messageParts: any[] = [{ type: 'text', text: message.text }];
+      
+      // Clear input immediately for better UX
+      setText('');
+      setContext('');
+      setImageUrl('');
+      
+      // Prepare file uploads (upload immediately, don't wait for completion)
+      let fileIds: string[] = [];
+      
+      if (message.files && message.files.length > 0) {
+        // Start all uploads in parallel
+        const uploadPromises = message.files.map(async (fileUIPart) => {
+          const file = (fileUIPart as any).__file as File;
+          if (!file) return null;
 
-        // Process files: upload and convert to AI-compatible format
-        if (message.files && message.files.length > 0) {
-          toast.loading('Processing files...', { id: 'file-processing' });
-
-          for (const fileUIPart of message.files) {
-            const file = (fileUIPart as any).__file as File;
-            if (!file) continue;
-
-            // Upload file to blob storage
+          try {
             const formData = new FormData();
             formData.append('file', file);
 
@@ -251,67 +255,50 @@ export function ChatInterface({
               throw new Error(`Failed to upload ${file.name}`);
             }
 
-            const { url: fileUrl, id: fileId } = await uploadResponse.json();
-            fileIds.push(fileId);
-
-            // The AI will receive the file content via the API
-            // Just add a reference in the message text for context
-            if (file.type === 'application/pdf') {
-              messageParts[0].text += `\n\n[Attached PDF: ${file.name}]`;
-            } else if (file.type.startsWith('image/')) {
-              messageParts[0].text += `\n\n[Attached Image: ${file.name}]`;
-            } else if (
-              file.type === 'text/plain' ||
-              file.type === 'application/json' ||
-              file.type.startsWith('text/')
-            ) {
-              messageParts[0].text += `\n\n[Attached Document: ${file.name}]`;
-            } else {
-              messageParts[0].text += `\n\n[Attached File: ${file.name}]`;
-            }
+            const { id: fileId } = await uploadResponse.json();
+            console.log('[ChatInterface] File uploaded:', file.name, 'ID:', fileId);
+            return fileId;
+          } catch (error) {
+            console.error('[ChatInterface] File upload error:', file.name, error);
+            toast.error(`Failed to upload ${file.name}`, {
+              description: error instanceof Error ? error.message : 'Please try again',
+            });
+            return null;
           }
+        });
 
-          toast.success('Files uploaded', {
-            id: 'file-processing',
-            description: `${message.files.length} file(s) attached`,
-          });
-        }
+        // Wait for all uploads to complete quickly (they should be fast for metadata)
+        const results = await Promise.all(uploadPromises);
+        fileIds = results.filter((id): id is string => id !== null);
+        console.log('[ChatInterface] All files uploaded, IDs:', fileIds);
+      }
 
-        // Add image URL if provided
-        if (message.imageUrl?.trim()) {
-          messageParts.push({
-            type: 'image',
-            image: message.imageUrl.trim(),
-          });
-        }
-
-        console.log('[ChatInterface] Sending message with', messageParts.length, 'parts');
-
-        sendMessage(
-          {
-            parts: messageParts,
-            metadata: {
-              ...(cleanContext ? { context: cleanContext } : {}),
-              ...(fileIds.length > 0 ? { fileIds } : {}),
-            },
-          } as any,
-          {
-            body: {
-              context: cleanContext || undefined,
-            },
-          },
-        );
-
-        setText('');
-        setContext('');
-        setImageUrl('');
-      } catch (error) {
-        console.error('Error processing files:', error);
-        toast.error('Failed to process files', {
-          id: 'file-processing',
-          description: error instanceof Error ? error.message : 'Please try again',
+      // Add image URL if provided
+      if (message.imageUrl?.trim()) {
+        messageParts.push({
+          type: 'image',
+          image: message.imageUrl.trim(),
         });
       }
+
+      console.log('[ChatInterface] Sending message with', messageParts.length, 'parts and', fileIds.length, 'files');
+
+      // Send message with file IDs
+      // Backend will process files asynchronously during AI response generation
+      sendMessage(
+        {
+          parts: messageParts,
+          metadata: {
+            ...(cleanContext ? { context: cleanContext } : {}),
+            ...(fileIds.length > 0 ? { fileIds } : {}),
+          },
+        } as any,
+        {
+          body: {
+            context: cleanContext || undefined,
+          },
+        },
+      );
     },
     [sendMessage, isProcessing],
   );

@@ -82,14 +82,14 @@ export function ChatInput({
           className="min-h-12 max-h-24 mb-2 text-sm"
           name="context"
         />
-        <PromptInputTextarea
+        {/* <PromptInputTextarea
           onChange={(event) => onImageUrlChangeAction(event.target.value)}
           value={imageUrl}
           disabled={disabled}
           placeholder="Image URL (optional)"
           className="min-h-12 max-h-16 mb-2 text-sm"
           name="imageUrl"
-        />
+        /> */}
         <PromptInputTextarea
           onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}

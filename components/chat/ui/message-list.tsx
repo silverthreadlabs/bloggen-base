@@ -65,7 +65,7 @@ export function MessageList({
           .filter((part) => {
             const anyPart = part as any;
             // Handle both regular file parts and data-file parts
-            return (part.type === 'file' || part.type === 'data-file') && (anyPart.data || anyPart.url);
+            return (part.type === 'file' || part.type === 'data-file') && (anyPart.data || anyPart.url || anyPart.__uploading);
           })
           .map((part) => {
             const anyPart = part as any;
@@ -77,6 +77,17 @@ export function MessageList({
                 mediaType: anyPart.data.mediaType || anyPart.mediaType || 'application/octet-stream',
                 filename: anyPart.data.filename || anyPart.filename || 'Attachment',
               } as FileUIPart;
+            }
+            // For uploading files (preview state)
+            if (anyPart.__uploading) {
+              return {
+                type: 'file' as const,
+                url: anyPart.url || '',
+                mediaType: anyPart.mediaType || 'application/octet-stream',
+                filename: anyPart.filename || 'Attachment',
+                __uploading: true,
+                __file: anyPart.__file,
+              } as any;
             }
             // For regular file parts
             return {
