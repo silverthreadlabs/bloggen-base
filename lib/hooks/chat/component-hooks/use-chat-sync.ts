@@ -50,12 +50,12 @@ export function useChatSync({ chatId, messages, enabled }: Props) {
           if (!content.trim()) {
             continue;
           }
-
+         //Revisit code
           await saveMessageMutation.mutateAsync({
             chatId,
             message: {
               role: 'assistant',
-              content,
+              context: content,
               parts: message.parts,
             },
           });
