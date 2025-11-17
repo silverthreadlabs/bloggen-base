@@ -1,5 +1,5 @@
 import type { FileAttachment } from '@/components/chat/types';
-import { allowedTypes } from '@/lib/constants';
+import { isMimeTypeAllowed } from './file-types';
 
 /**
  * Upload a file to the server and get back the file metadata with URL
@@ -147,7 +147,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     return { valid: false, error: 'File size exceeds 20MB limit' };
   }
 
-  if (!allowedTypes.includes(file.type)) {
+  if (!isMimeTypeAllowed(file.type)) {
     return { valid: false, error: 'File type not supported' };
   }
 

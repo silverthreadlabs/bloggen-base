@@ -7,7 +7,7 @@ import type { File as DBFile } from '@/lib/db/schema';
 import { PromptInputActionMenuItem } from '@/components/ai-elements/prompt-input';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { allowedTypes } from '@/lib/constants';
+import { isMimeTypeAllowed, getAllowedExtensions } from '@/lib/utils/file-types';
 
 export type FileAttachment = DBFile & {
   id: string;
@@ -107,8 +107,9 @@ export function useFileUploads(): UseFileUploadsReturn {
     //   'image/heif', // .heif
     // ];
 
-    if (!allowedTypes.includes(fileToUpload.type)) {
-      toast.error('File type not supported. Only the following file types are allowed: PDF, Word documents (DOC/DOCX), PowerPoint (PPT/PPTX), Excel (XLSX), text files (TXT), Markdown (MD), and images (JPEG/PNG/JPG/SVG)');
+    if (!isMimeTypeAllowed(fileToUpload.type)) {
+      const allowedExts = getAllowedExtensions().map(ext => `.${ext}`).join(', ');
+      toast.error(`File type not supported. Allowed: ${allowedExts}`);
       return;
     }
 
@@ -260,7 +261,9 @@ export function FileUploadAction({
     const files = event.target.files;
     if (files && files.length > 0) {
       if (multiple) {
-        Array.from(files).forEach(file => onFileSelect(file));
+        Array.from(files).forEach(file => {
+          onFileSelect(file);
+        });
       } else {
         onFileSelect(files[0]);
       }
@@ -322,7 +325,9 @@ export function FileUploadButton({
     const files = event.target.files;
     if (files && files.length > 0) {
       if (multiple) {
-        Array.from(files).forEach(file => onFileSelect(file));
+        Array.from(files).forEach(file => {
+          onFileSelect(file);
+        });
       } else {
         onFileSelect(files[0]);
       }
