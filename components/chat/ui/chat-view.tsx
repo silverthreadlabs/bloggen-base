@@ -9,6 +9,7 @@ import {
 import { Loader } from '@/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
+import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
 
 import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
@@ -21,8 +22,13 @@ type Props = {
   isLoading: boolean;
   isLoadingChat?: boolean;
   isProcessing?: boolean;
+  fileUploads: ReturnType<typeof useFileUploads>;
   text: string;
   setText: (text: string) => void;
+  context: string;
+  setContext: (context: string) => void;
+  imageUrl: string;
+  setImageUrl: (imageUrl: string) => void;
   useWebSearch: boolean;
   setUseWebSearch: (use: boolean) => void;
   useMicrophone: boolean;
@@ -54,6 +60,10 @@ export function ChatView({
   isProcessing = false,
   text,
   setText,
+  context,
+  setContext,
+  imageUrl,
+  setImageUrl,
   useWebSearch,
   setUseWebSearch,
   useMicrophone,
@@ -65,6 +75,7 @@ export function ChatView({
   chatTitle,
   chatId,
   pinned = false,
+  fileUploads,
   onSubmit,
   onSuggestionClick,
   onDelete,
@@ -79,7 +90,7 @@ export function ChatView({
   const isNewChat = messages.length === 0 && !chatId;
 
   return (
-    <div className="relative flex size-full w-full flex-col overflow-hidden">
+    <div className="relative flex size-full pb-4 w-full flex-col overflow-hidden">
       <ChatHeader
         title={chatTitle}
         chatId={chatId}
@@ -124,7 +135,7 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4">
+      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4 rounded-lg">
         {/* Suggestions commented out for now */}
         {/* <Suggestions className="px-4">
           {suggestions.map((suggestion) => (
@@ -139,7 +150,11 @@ export function ChatView({
         <div className="mx-auto w-full max-w-4xl px-4 pb-4">
           <ChatInput
             text={text}
+            context={context}
             onTextChangeAction={setText}
+            onContextChangeAction={setContext}
+            imageUrl={imageUrl}
+            onImageUrlChangeAction={setImageUrl}
             useWebSearch={useWebSearch}
             onWebSearchChangeAction={setUseWebSearch}
             useMicrophone={useMicrophone}
@@ -149,6 +164,7 @@ export function ChatView({
             length={length}
             onLengthChangeAction={setLength}
             status={status}
+            fileUploads={fileUploads}
             onSubmitAction={onSubmit}
             onStopAction={onStop}
             disabled={isLoadingChat}

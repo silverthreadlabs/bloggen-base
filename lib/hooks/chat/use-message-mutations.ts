@@ -40,15 +40,13 @@ export function useUpdateMessage() {
     mutationFn: ({
       chatId,
       messageId,
-      content,
       parts,
     }: {
       chatId: string;
       messageId: string;
-      content: string;
       parts: any[];
-    }) => updateMessage(chatId, messageId, content, parts),
-    onMutate: async ({ chatId, messageId, content, parts }) => {
+    }) => updateMessage(chatId, messageId, parts),
+    onMutate: async ({ chatId, messageId, parts }) => {
       await queryClient.cancelQueries({ queryKey: chatKeys.detail(chatId) });
 
       const previousChat = queryClient.getQueryData<ChatWithMessages>(
@@ -61,7 +59,7 @@ export function useUpdateMessage() {
           ...previousChat,
           messages: previousChat.messages.map((msg) =>
             msg.id === messageId
-              ? { ...msg, content, parts, isEdited: true }
+              ? { ...msg, parts, isEdited: true }
               : msg,
           ),
         });

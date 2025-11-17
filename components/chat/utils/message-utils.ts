@@ -14,6 +14,6 @@ export function isLastAssistantMessage(
   isLoading: boolean,
 ): boolean {
   return (
-    message.role === 'assistant' && index === messages.length - 1 && !isLoading
+    message.role === 'assistant' && index === messages.length - 1
   );
 }

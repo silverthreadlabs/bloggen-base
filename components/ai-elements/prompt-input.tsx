@@ -75,7 +75,7 @@ import { cn } from '@/lib/utils';
 // ============================================================================
 
 export type AttachmentsContext = {
-  files: (FileUIPart & { id: string })[];
+  files: (FileUIPart & { id: string; __file?: File })[];
   add: (files: File[] | FileList) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -89,8 +89,11 @@ export type TextInputContext = {
   clear: () => void;
 };
 
+
+
 export type PromptInputControllerProps = {
   textInput: TextInputContext;
+  contextInput: TextInputContext;
   attachments: AttachmentsContext;
   /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
   __registerFileInput: (
@@ -149,9 +152,13 @@ export function PromptInputProvider({
   const [textInput, setTextInput] = useState(initialTextInput);
   const clearInput = useCallback(() => setTextInput(''), []);
 
+  // ----- contextInput state
+  const [contextInput, setContextInput] = useState('');
+  const clearContext = useCallback(() => setContextInput(''), []);
+
   // ----- attachments state (global when wrapped)
   const [attachements, setAttachements] = useState<
-    (FileUIPart & { id: string })[]
+    (FileUIPart & { id: string; __file?: File })[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const openRef = useRef<() => void>(() => {});
@@ -179,6 +186,10 @@ export function PromptInputProvider({
       if (found?.url) URL.revokeObjectURL(found.url);
       return prev.filter((f) => f.id !== id);
     });
+    // Reset the file input element so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, []);
 
   const clear = useCallback(() => {
@@ -186,6 +197,10 @@ export function PromptInputProvider({
       for (const f of prev) if (f.url) URL.revokeObjectURL(f.url);
       return [];
     });
+    // Reset the file input element so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, []);
 
   const openFileDialog = useCallback(() => {
@@ -219,10 +234,15 @@ export function PromptInputProvider({
         setInput: setTextInput,
         clear: clearInput,
       },
+      contextInput: {
+        value: contextInput,
+        setInput: setContextInput,
+        clear: clearContext,
+      },
       attachments,
       __registerFileInput,
     }),
-    [textInput, clearInput, attachments, __registerFileInput],
+    [textInput, clearInput, contextInput, clearContext, attachments, __registerFileInput],
   );
 
   return (
@@ -397,6 +417,8 @@ export const PromptInputActionAddAttachments = ({
 
 export type PromptInputMessage = {
   text?: string;
+  context?: string;
+  imageUrl?: string;
   files?: FileUIPart[];
 };
 
@@ -417,6 +439,8 @@ export type PromptInputProps = Omit<
     code: 'max_files' | 'max_file_size' | 'accept';
     message: string;
   }) => void;
+  onFileAdd?: (filesWithIds: Array<{ id: string; file: File }>) => void;
+  onFileRemove?: (fileId: string) => void;
   onSubmit: (
     message: PromptInputMessage,
     event: FormEvent<HTMLFormElement>,
@@ -432,6 +456,8 @@ export const PromptInput = ({
   maxFiles,
   maxFileSize,
   onError,
+  onFileAdd,
+  onFileRemove,
   onSubmit,
   children,
   ...props
@@ -454,7 +480,7 @@ export const PromptInput = ({
   }, []);
 
   // ----- Local attachments (only used when no provider)
-  const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
+  const [items, setItems] = useState<(FileUIPart & { id: string; __file?: File })[]>([]);
   const files = usingProvider ? controller.attachments.files : items;
 
   const openFileDialogLocal = useCallback(() => {
@@ -466,11 +492,26 @@ export const PromptInput = ({
       if (!accept || accept.trim() === '') {
         return true;
       }
-      if (accept.includes('image/*')) {
-        return f.type.startsWith('image/');
+      
+      // Handle wildcard patterns like image/*
+      if (accept.includes('image/*') && f.type.startsWith('image/')) {
+        return true;
       }
-      // NOTE: keep simple; expand as needed
-      return true;
+      
+      // Check MIME type directly
+      const acceptedMimes = accept.split(',').map(s => s.trim()).filter(s => !s.startsWith('.'));
+      if (acceptedMimes.some(mime => f.type === mime)) {
+        return true;
+      }
+      
+      // Check file extension
+      const fileName = f.name.toLowerCase();
+      const acceptedExtensions = accept.split(',').map(s => s.trim()).filter(s => s.startsWith('.'));
+      if (acceptedExtensions.some(ext => fileName.endsWith(ext.toLowerCase()))) {
+        return true;
+      }
+      
+      return false;
     },
     [accept],
   );
@@ -479,51 +520,94 @@ export const PromptInput = ({
     (fileList: File[] | FileList) => {
       const incoming = Array.from(fileList);
       const accepted = incoming.filter((f) => matchesAccept(f));
-      if (incoming.length && accepted.length === 0) {
+      
+      // Report rejected files with their names
+      const rejected = incoming.filter((f) => !matchesAccept(f));
+      if (rejected.length > 0) {
+        const rejectedNames = rejected.map(f => f.name).join(', ');
         onError?.({
           code: 'accept',
-          message: 'No files match the accepted types.',
+          message: `File type not supported: ${rejectedNames}`,
         });
+      }
+      
+      if (incoming.length && accepted.length === 0) {
         return;
       }
+      
       const withinSize = (f: File) =>
         maxFileSize ? f.size <= maxFileSize : true;
       const sized = accepted.filter(withinSize);
-      if (accepted.length > 0 && sized.length === 0) {
+      
+      // Report files that are too large
+      const tooLarge = accepted.filter((f) => !withinSize(f));
+      if (tooLarge.length > 0) {
+        const largeNames = tooLarge.map(f => f.name).join(', ');
         onError?.({
           code: 'max_file_size',
-          message: 'All files exceed the maximum size.',
+          message: `File too large: ${largeNames}`,
         });
+      }
+      
+      if (accepted.length > 0 && sized.length === 0) {
         return;
       }
 
+      // Create items outside of setItems to avoid calling onFileAdd during state update
+      let newItems: (FileUIPart & { id: string; __file?: File })[] = [];
+      
       setItems((prev) => {
+        // Filter out files that are already in the list (by name, size, and type)
+        const existingFiles = new Set(
+          prev.map(item => `${item.filename}-${item.mediaType}`)
+        );
+        
+        const uniqueFiles = sized.filter(file => 
+          !existingFiles.has(`${file.name}-${file.type}`)
+        );
+        
+        if (uniqueFiles.length === 0) {
+          // All files are duplicates
+          return prev;
+        }
+        
         const capacity =
           typeof maxFiles === 'number'
             ? Math.max(0, maxFiles - prev.length)
             : undefined;
         const capped =
-          typeof capacity === 'number' ? sized.slice(0, capacity) : sized;
-        if (typeof capacity === 'number' && sized.length > capacity) {
+          typeof capacity === 'number' ? uniqueFiles.slice(0, capacity) : uniqueFiles;
+        if (typeof capacity === 'number' && uniqueFiles.length > capacity) {
           onError?.({
             code: 'max_files',
             message: 'Too many files. Some were not added.',
           });
         }
-        const next: (FileUIPart & { id: string })[] = [];
+        
+        newItems = [];
         for (const file of capped) {
-          next.push({
+          newItems.push({
             id: nanoid(),
             type: 'file',
             url: URL.createObjectURL(file),
             mediaType: file.type,
             filename: file.name,
+            // Store the actual File object for later upload
+            __file: file as any,
           });
         }
-        return prev.concat(next);
+        
+        return prev.concat(newItems);
       });
+      
+      // Call onFileAdd AFTER state update completes
+      if (onFileAdd && newItems.length > 0) {
+        // Map to { id, file } objects for easier handling
+        const filesWithIds = newItems.map(item => ({ id: item.id, file: item.__file! }));
+        onFileAdd(filesWithIds as any);
+      }
     },
-    [matchesAccept, maxFiles, maxFileSize, onError],
+    [matchesAccept, maxFiles, maxFileSize, onError, onFileAdd],
   );
 
   const add = usingProvider
@@ -532,7 +616,11 @@ export const PromptInput = ({
 
   const remove = usingProvider
     ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
+    : (id: string) => {
+        // Trigger onFileRemove callback
+        if (onFileRemove) {
+          onFileRemove(id);
+        }
         setItems((prev) => {
           const found = prev.find((file) => file.id === id);
           if (found?.url) {
@@ -540,10 +628,15 @@ export const PromptInput = ({
           }
           return prev.filter((file) => file.id !== id);
         });
+        // Reset the file input element so the same file can be selected again
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+      };
 
   const clear = usingProvider
     ? () => controller.attachments.clear()
-    : () =>
+    : () => {
         setItems((prev) => {
           for (const file of prev) {
             if (file.url) {
@@ -552,6 +645,11 @@ export const PromptInput = ({
           }
           return [];
         });
+        // Reset the file input element so the same file can be selected again
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+      };
 
   const openFileDialog = usingProvider
     ? () => controller.attachments.openFileDialog()
@@ -638,17 +736,6 @@ export const PromptInput = ({
     }
   };
 
-  const convertBlobUrlToDataUrl = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
   const ctx = useMemo<AttachmentsContext>(
     () => ({
       files: files.map((item) => ({ ...item, id: item.id })),
@@ -661,7 +748,7 @@ export const PromptInput = ({
     [files, add, remove, clear, openFileDialog],
   );
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -671,51 +758,58 @@ export const PromptInput = ({
           const formData = new FormData(form);
           return (formData.get('message') as string) || '';
         })();
+    
+    const context = usingProvider
+      ? controller.contextInput?.value || ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('context') as string) || '';
+        })();
 
-    // Reset form immediately after capturing text to avoid race condition
-    // where user input during async blob conversion would be lost
+    const imageUrl = usingProvider
+      ? ''
+      : (() => {
+          const formData = new FormData(form);
+          return (formData.get('imageUrl') as string) || '';
+        })();
+
+    // Reset form immediately after capturing text
     if (!usingProvider) {
       form.reset();
     }
 
-    // Convert blob URLs to data URLs asynchronously
-    Promise.all(
-      files.map(async ({ id, ...item }) => {
-        if (item.url?.startsWith('blob:')) {
-          return {
-            ...item,
-            url: await convertBlobUrlToDataUrl(item.url),
-          };
-        }
-        return item;
-      }),
-    ).then((convertedFiles: FileUIPart[]) => {
-      try {
-        const result = onSubmit({ text, files: convertedFiles }, event);
+    try {
+      // Pass files with blob URLs - they'll be uploaded during message submission
+      const filesWithBlobUrls: FileUIPart[] = files.map(({ id, __file, ...item }) => ({
+        ...item,
+        // Keep the blob URL temporarily for preview
+        // The actual File object is attached for upload
+        __file: __file as any,
+      }));
 
-        // Handle both sync and async onSubmit
-        if (result instanceof Promise) {
-          result
-            .then(() => {
-              clear();
-              if (usingProvider) {
-                controller.textInput.clear();
-              }
-            })
-            .catch(() => {
-              // Don't clear on error - user may want to retry
-            });
-        } else {
-          // Sync function completed without throwing, clear attachments
-          clear();
-          if (usingProvider) {
-            controller.textInput.clear();
+      const result = onSubmit({ text, context, imageUrl, files: filesWithBlobUrls }, event);
+
+      // Handle both sync and async onSubmit
+      if (result instanceof Promise) {
+        await result;
+        clear();
+        if (usingProvider) {
+          controller.textInput.clear();
+          if (controller.contextInput) {
+            controller.contextInput.clear();
           }
         }
-      } catch (error) {
-        // Don't clear on error - user may want to retry
+      } else {
+        // Sync function completed without throwing, clear attachments
+        clear();
+        if (usingProvider) {
+          controller.textInput.clear();
+        }
       }
-    });
+    } catch (error) {
+      console.error('Submit error:', error);
+      // Don't clear on error - user may want to retry
+    }
   };
 
   // Render with or without local provider
@@ -890,7 +984,7 @@ export const PromptInputTools = ({
   className,
   ...props
 }: PromptInputToolsProps) => (
-  <div className={cn('flex items-center gap-1', className)} {...props} />
+  <div className={cn('flex items-center gap-2', className)} {...props} />
 );
 
 export type PromptInputButtonProps = ComponentProps<typeof InputGroupButton>;
@@ -899,6 +993,8 @@ export const PromptInputButton = ({
   variant = 'ghost',
   className,
   size,
+  iconOnly,
+  leadingIcon,
   ...props
 }: PromptInputButtonProps) => {
   const newSize =
@@ -910,6 +1006,8 @@ export const PromptInputButton = ({
       size={newSize}
       type="button"
       variant={variant}
+      iconOnly={iconOnly}
+      leadingIcon={leadingIcon}
       {...props}
     />
   );
@@ -928,9 +1026,7 @@ export const PromptInputActionMenuTrigger = ({
   ...props
 }: PromptInputActionMenuTriggerProps) => (
   <DropdownMenuTrigger asChild>
-    <PromptInputButton className={className} {...props}>
-      {children ?? <PlusIcon className="size-4" />}
-    </PromptInputButton>
+    <PromptInputButton className={className} {...props} iconOnly leadingIcon={children ? undefined : <PlusIcon className="size-4" />} />
   </DropdownMenuTrigger>
 );
 
@@ -967,6 +1063,8 @@ export const PromptInputSubmit = ({
   size = 'icon-sm',
   status,
   children,
+  iconOnly,
+  leadingIcon,
   ...props
 }: PromptInputSubmitProps) => {
   let Icon = <SendIcon className="size-4" />;
@@ -986,10 +1084,10 @@ export const PromptInputSubmit = ({
       size={size}
       type="submit"
       variant={variant}
+      iconOnly={iconOnly}
+      leadingIcon={children ? undefined : Icon}
       {...props}
-    >
-      {children ?? Icon}
-    </InputGroupButton>
+    />
   );
 };
 
@@ -1148,9 +1246,9 @@ export const PromptInputSpeechButton = ({
       disabled={!recognition}
       onClick={toggleListening}
       {...props}
-    >
-      <MicIcon className="size-4" />
-    </PromptInputButton>
+      iconOnly
+      leadingIcon={<MicIcon className="size-4" />}
+    />
   );
 };
 

@@ -22,7 +22,7 @@ type Props = {
 export function LengthSelector({ value, onChange, disabled = false }: Props) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="h-8 w-[140px] text-xs">
+      <SelectTrigger className="h-8 w-auto text-xs">
         <div className="flex items-center gap-1.5">
           <TextIcon size={14} className="text-muted-foreground" />
           <SelectValue placeholder="Length" />

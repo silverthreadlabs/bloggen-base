@@ -22,7 +22,6 @@ export function useMessageOperations(chatId: string) {
     async (
       message: {
         role: 'user' | 'assistant' | 'system';
-        content: string;
         parts: any[];
       },
       customId?: string,
@@ -38,12 +37,11 @@ export function useMessageOperations(chatId: string) {
 
   // Use mutate for update - fire and forget with optimistic updates
   const updateMessage = useCallback(
-    (messageId: string, content: string) => {
+    (messageId: string, parts: any[]) => {
       updateMessageMutation.mutate({
         chatId,
         messageId,
-        content,
-        parts: [{ type: 'text', text: content }],
+        parts,
       });
     },
     [chatId, updateMessageMutation],

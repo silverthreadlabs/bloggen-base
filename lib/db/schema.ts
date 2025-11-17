@@ -193,7 +193,7 @@ export const message = pgTable('message', {
     .notNull()
     .references(() => chat.id, { onDelete: 'cascade' }),
   role: varchar('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
-  content: text('content').notNull(),
+  context: text('context'), // Renamed from content, now optional - use parts instead
   parts: jsonb('parts').notNull().$type<any[]>(),
   attachments: jsonb('attachments').$type<any[]>(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
@@ -279,3 +279,18 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const file = pgTable('file', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  messageId: uuid('messageId').references(() => message.id, { onDelete: 'cascade' }),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  type: text('type').notNull(), // MIME type
+  size: integer('size').notNull(), // Size in bytes
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+export type File = InferSelectModel<typeof file>;

@@ -1,11 +1,20 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
+import { useFileUploads } from '@/lib/hooks/use-file-uploads';
+import { 
+  getToneModifierWithMarkers, 
+  getLengthModifierWithMarkers,
+  TONE_MARKER_START,
+  TONE_MARKER_END,
+  LENGTH_MARKER_START,
+  LENGTH_MARKER_END,
+} from '@/lib/config/message-modifiers';
 import type { ChatWithMessages } from '@/lib/hooks/chat';
 import { useChats, useUpdateChatTitleInCache } from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
@@ -31,6 +40,8 @@ export function ChatInterface({
 }: Props) {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
+  const [context, setContext] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [useWebSearch, setUseWebSearch] = useState(false);
   const [useMicrophone, setUseMicrophone] = useState(false);
 
@@ -41,8 +52,88 @@ export function ChatInterface({
 
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
   const pendingSavesRef = useRef<Set<string>>(new Set());
+  const messagesInitializedRef = useRef(false);
+  const userContextRef = useRef(''); // Store user's actual context separately
 
   const { data: allChats } = useChats();
+  
+  // Build full context from user context and current modifiers
+  const buildFullContext = useCallback((userContext: string): string => {
+    let fullContext = userContext;
+    
+    // Add tone instructions with markers
+    const toneModifier = getToneModifierWithMarkers(modifiersRef.current.tone);
+    if (toneModifier) {
+      fullContext = fullContext ? `${fullContext}${toneModifier}` : toneModifier.trim();
+    }
+    
+    // Add length instructions with markers
+    const lengthModifier = getLengthModifierWithMarkers(modifiersRef.current.length);
+    if (lengthModifier) {
+      fullContext = fullContext ? `${fullContext}${lengthModifier}` : lengthModifier.trim();
+    }
+    
+    return fullContext;
+  }, []);
+  
+  // Extract user context by removing modifier sections using markers
+  const extractUserContext = useCallback((fullContext: string): string => {
+    let extracted = fullContext;
+    
+    // Remove tone modifier section using indexOf (more reliable than regex)
+    let toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+    while (toneStartIdx !== -1) {
+      const toneEndIdx = extracted.indexOf(TONE_MARKER_END, toneStartIdx);
+      if (toneEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted = extracted.substring(0, toneStartIdx) + 
+                    extracted.substring(toneEndIdx + TONE_MARKER_END.length);
+        toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+      } else {
+        break;
+      }
+    }
+    
+    // Remove length modifier section using indexOf
+    let lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+    while (lengthStartIdx !== -1) {
+      const lengthEndIdx = extracted.indexOf(LENGTH_MARKER_END, lengthStartIdx);
+      if (lengthEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted = extracted.substring(0, lengthStartIdx) + 
+                    extracted.substring(lengthEndIdx + LENGTH_MARKER_END.length);
+        lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+      } else {
+        break;
+      }
+    }
+    
+    return extracted.trim();
+  }, []);
+  
+  // Wrapper for setContext that updates userContextRef
+  const handleContextChange = useCallback((newContext: string) => {
+    const userPart = extractUserContext(newContext);
+    userContextRef.current = userPart;
+    setContext(newContext);
+  }, [extractUserContext]);
+  
+  // Wrapper for setModifiers that rebuilds context
+  const handleModifiersChange = useCallback((newModifiers: typeof modifiers) => {
+    setModifiers(newModifiers);
+    modifiersRef.current = newModifiers;
+    const fullContext = buildFullContext(userContextRef.current);
+    setContext(fullContext);
+  }, [setModifiers, buildFullContext]);
+  
+  // Individual setters for tone and length
+  const handleToneChange = useCallback((tone: typeof modifiers.tone) => {
+    handleModifiersChange({ tone, length: modifiersRef.current.length });
+  }, [handleModifiersChange]);
+  
+  const handleLengthChange = useCallback((length: typeof modifiers.length) => {
+    handleModifiersChange({ tone: modifiersRef.current.tone, length });
+  }, [handleModifiersChange]);
   
   // Fetch current chat data to get updated title
   const { data: currentChat } = useChatQuery(chatId);
@@ -52,6 +143,17 @@ export function ChatInterface({
   const togglePin = useToggleChatPin();
   const pinned = useChatPinStatus(chatId);
   const updateChatTitleInCache = useUpdateChatTitleInCache();
+
+  // File uploads hook - uploads immediately on file selection
+  const fileUploads = useFileUploads({
+    chatId,
+    onUploadComplete: (fileId, file) => {
+      console.log('[Chat] File uploaded:', file.name, fileId);
+    },
+    onUploadError: (error, file) => {
+      console.error('[Chat] File upload failed:', file.name, error);
+    },
+  });
 
   const {
     messages,
@@ -92,10 +194,6 @@ export function ChatInterface({
         await messageOps.saveMessage(
           {
             role: 'assistant',
-            content: assistantMessage.parts
-              .filter((part) => part.type === 'text')
-              .map((part) => (part.type === 'text' ? part.text : ''))
-              .join(''),
             parts: assistantMessage.parts,
           },
           assistantMessage.id, // Use the client-generated ID
@@ -115,10 +213,12 @@ export function ChatInterface({
   });
 
   // Initialize messages from server data on mount (for existing chats)
-  if (messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+  // Use queueMicrotask to defer setState and avoid the "setState during render" warning
+  if (!messagesInitializedRef.current && messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+    messagesInitializedRef.current = true;
     const chatData = currentChat || initialChat;
     if (chatData?.messages) {
-      setMessages(chatData.messages);
+      queueMicrotask(() => setMessages(chatData.messages));
     }
   }
 
@@ -128,26 +228,76 @@ export function ChatInterface({
 
   const handleSubmit = useCallback(
     async (message: PromptInputMessage) => {
+      // Check if any files are still uploading
+      if (fileUploads.isAnyUploading()) {
+        toast.error('Please wait for files to finish uploading');
+        return;
+      }
+
       if (!message.text?.trim() || isProcessing) return;
 
-      if (message.files?.length) {
-        toast.success('Files attached', {
-          description: `${message.files.length} file(s) attached`,
+      const contextWithMarkers = message.context || '';
+      const cleanContext = contextWithMarkers
+        .replaceAll(TONE_MARKER_START, '')
+        .replaceAll(TONE_MARKER_END, '')
+        .replaceAll(LENGTH_MARKER_START, '')
+        .replaceAll(LENGTH_MARKER_END, '')
+        .trim();
+
+      const messageParts: any[] = [{ type: 'text', text: message.text }];
+      
+      // Get uploaded file IDs and details from the upload hook
+      const fileIds = fileUploads.getUploadedFileIds();
+      const uploadedFiles = fileUploads.getUploadedFiles();
+      
+      // Add file attachments to message parts for optimistic UI
+      for (const file of uploadedFiles) {
+        if (file.type.startsWith('image/')) {
+          messageParts.push({
+            type: 'image',
+            image: file.url,
+          });
+        } else {
+          messageParts.push({
+            type: 'file',
+            data: file.url,
+            mimeType: file.type,
+          });
+        }
+      }
+      
+      // Clear input immediately for better UX
+      setText('');
+      setContext('');
+      setImageUrl('');
+      fileUploads.clearAll();
+
+      // Add image URL if provided
+      if (message.imageUrl?.trim()) {
+        messageParts.push({
+          type: 'image',
+          image: message.imageUrl.trim(),
         });
       }
 
+      // Send message with file IDs in metadata for backend processing
+      // The parts above will ensure optimistic UI shows the attachments
       sendMessage(
-        { text: message.text },
+        {
+          parts: messageParts,
+          metadata: {
+            ...(cleanContext ? { context: cleanContext } : {}),
+            ...(fileIds.length > 0 ? { fileIds } : {}),
+          },
+        } as any,
         {
           body: {
-            tone: modifiersRef.current.tone,
-            length: modifiersRef.current.length,
+            context: cleanContext || undefined,
           },
         },
       );
-      setText('');
     },
-    [sendMessage, isProcessing],
+    [sendMessage, isProcessing, fileUploads, setText, setContext, setImageUrl],
   );
 
   const handleSuggestionClick = useCallback(
@@ -175,15 +325,15 @@ export function ChatInterface({
       if (editedMessage.role !== 'user') return;
 
       // Update the message in the database
-      messageOps.updateMessage(messageId, newContent);
+      const newParts = [{ type: 'text' as const, text: newContent }];
+      messageOps.updateMessage(messageId, newParts);
 
       // Update local messages state with properly typed parts
       const updatedMessages = messages.map((m) =>
         m.id === messageId
           ? {
               ...m,
-              content: newContent,
-              parts: [{ type: 'text' as const, text: newContent }],
+              parts: newParts,
             }
           : m,
       );
@@ -216,12 +366,14 @@ export function ChatInterface({
           // Remove the assistant message and all messages after it from local state
           setMessages(messagesUpToEdit);
 
+          // Extract context from the original message metadata (preserve it after edit)
+          const messageContext = (messages[messageIndex].metadata as { context?: string } | undefined)?.context;
+
           // Regenerate using the edited user message ID
           aiRegenerate({
             messageId: messageId, // This is already the user message ID
             body: {
-              tone: modifiersRef.current.tone,
-              length: modifiersRef.current.length,
+              context: messageContext, // Pass context for regeneration
             },
           });
 
@@ -283,12 +435,14 @@ export function ChatInterface({
         // Remove the assistant message and all messages after it
         setMessages(messages.slice(0, messageIndex));
 
+        // Extract context from the user message metadata
+        const userContext = (userMessage.metadata as { context?: string } | undefined)?.context;
+
         // Regenerate using the user message ID (the message before the assistant message)
         aiRegenerate({
           messageId: userMessage.id,
           body: {
-            tone: modifiersRef.current.tone,
-            length: modifiersRef.current.length,
+            context: userContext, // Pass context for regeneration
           },
         });
 
@@ -358,19 +512,24 @@ export function ChatInterface({
       status={status}
       isLoading={isLoading}
       isLoadingChat={isLoadingChat}
-      isProcessing={isProcessing}
+      isProcessing={isProcessing || fileUploads.isAnyUploading()}
       text={text}
       setText={setText}
+      context={context}
+      setContext={handleContextChange}
+      imageUrl={imageUrl}
+      setImageUrl={setImageUrl}
       useWebSearch={useWebSearch}
       setUseWebSearch={setUseWebSearch}
       useMicrophone={useMicrophone}
       setUseMicrophone={setUseMicrophone}
       tone={modifiers.tone}
-      setTone={(tone) => setModifiers({ tone, length: modifiers.length })}
+      setTone={handleToneChange}
       length={modifiers.length}
-      setLength={(length) => setModifiers({ tone: modifiers.tone, length })}
+      setLength={handleLengthChange}
       pinned={pinned}
       chatTitle={currentChat?.title || initialChat?.title}
+      fileUploads={fileUploads}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       onEdit={handleEdit}
