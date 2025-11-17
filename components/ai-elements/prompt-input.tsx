@@ -186,6 +186,10 @@ export function PromptInputProvider({
       if (found?.url) URL.revokeObjectURL(found.url);
       return prev.filter((f) => f.id !== id);
     });
+    // Reset the file input element so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, []);
 
   const clear = useCallback(() => {
@@ -193,6 +197,10 @@ export function PromptInputProvider({
       for (const f of prev) if (f.url) URL.revokeObjectURL(f.url);
       return [];
     });
+    // Reset the file input element so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }, []);
 
   const openFileDialog = useCallback(() => {
@@ -620,11 +628,15 @@ export const PromptInput = ({
           }
           return prev.filter((file) => file.id !== id);
         });
+        // Reset the file input element so the same file can be selected again
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
       };
 
   const clear = usingProvider
     ? () => controller.attachments.clear()
-    : () =>
+    : () => {
         setItems((prev) => {
           for (const file of prev) {
             if (file.url) {
@@ -633,6 +645,11 @@ export const PromptInput = ({
           }
           return [];
         });
+        // Reset the file input element so the same file can be selected again
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+      };
 
   const openFileDialog = usingProvider
     ? () => controller.attachments.openFileDialog()

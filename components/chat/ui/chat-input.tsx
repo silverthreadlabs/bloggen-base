@@ -168,7 +168,7 @@ export function ChatInput({
           </PromptInputButton>
         </PromptInputTools>
         <PromptInputSubmit
-          disabled={disabled || !(text.trim() || status)}
+          disabled={disabled || fileUploads.isAnyUploading() || !(text.trim() || status)}
           status={status}
           onClick={(e) => {
             if (status === 'streaming') {
