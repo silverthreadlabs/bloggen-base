@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth/auth';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -16,13 +17,15 @@ export async function POST(request: NextRequest) {
     // Authenticate user
     const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const formData = await request.formData();
     const uploadedFile = formData.get('file') as File;
-    const messageId = formData.get('messageId') as string | null;
+    
+    // messageId is not needed during upload - files are uploaded before message is created
 
     if (!uploadedFile) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -123,11 +126,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Save file metadata to database
+    // Save file metadata to database (without messageId - will be associated later)
     const [savedFile] = await db
       .insert(fileSchema)
       .values({
-        messageId: messageId || null,
+        messageId: null, // Files are uploaded before message is created
         userId: session.user.id,
         name: uploadedFile.name,
         url,
@@ -146,8 +149,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('File upload error:', error);
+    // Ensure we always return JSON even on error
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { 
+        error: error instanceof Error ? error.message : 'Failed to upload file',
+        details: error instanceof Error ? error.stack : String(error)
+      },
       { status: 500 }
     );
   }
