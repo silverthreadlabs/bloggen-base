@@ -431,6 +431,8 @@ export type PromptInputProps = Omit<
     code: 'max_files' | 'max_file_size' | 'accept';
     message: string;
   }) => void;
+  onFileAdd?: (filesWithIds: Array<{ id: string; file: File }>) => void;
+  onFileRemove?: (fileId: string) => void;
   onSubmit: (
     message: PromptInputMessage,
     event: FormEvent<HTMLFormElement>,
@@ -446,6 +448,8 @@ export const PromptInput = ({
   maxFiles,
   maxFileSize,
   onError,
+  onFileAdd,
+  onFileRemove,
   onSubmit,
   children,
   ...props
@@ -541,22 +545,40 @@ export const PromptInput = ({
         return;
       }
 
+      // Create items outside of setItems to avoid calling onFileAdd during state update
+      let newItems: (FileUIPart & { id: string; __file?: File })[] = [];
+      
       setItems((prev) => {
+        // Filter out files that are already in the list (by name, size, and type)
+        const existingFiles = new Set(
+          prev.map(item => `${item.filename}-${item.mediaType}`)
+        );
+        
+        const uniqueFiles = sized.filter(file => 
+          !existingFiles.has(`${file.name}-${file.type}`)
+        );
+        
+        if (uniqueFiles.length === 0) {
+          // All files are duplicates
+          return prev;
+        }
+        
         const capacity =
           typeof maxFiles === 'number'
             ? Math.max(0, maxFiles - prev.length)
             : undefined;
         const capped =
-          typeof capacity === 'number' ? sized.slice(0, capacity) : sized;
-        if (typeof capacity === 'number' && sized.length > capacity) {
+          typeof capacity === 'number' ? uniqueFiles.slice(0, capacity) : uniqueFiles;
+        if (typeof capacity === 'number' && uniqueFiles.length > capacity) {
           onError?.({
             code: 'max_files',
             message: 'Too many files. Some were not added.',
           });
         }
-        const next: (FileUIPart & { id: string; __file?: File })[] = [];
+        
+        newItems = [];
         for (const file of capped) {
-          next.push({
+          newItems.push({
             id: nanoid(),
             type: 'file',
             url: URL.createObjectURL(file),
@@ -566,10 +588,18 @@ export const PromptInput = ({
             __file: file as any,
           });
         }
-        return prev.concat(next);
+        
+        return prev.concat(newItems);
       });
+      
+      // Call onFileAdd AFTER state update completes
+      if (onFileAdd && newItems.length > 0) {
+        // Map to { id, file } objects for easier handling
+        const filesWithIds = newItems.map(item => ({ id: item.id, file: item.__file! }));
+        onFileAdd(filesWithIds as any);
+      }
     },
-    [matchesAccept, maxFiles, maxFileSize, onError],
+    [matchesAccept, maxFiles, maxFileSize, onError, onFileAdd],
   );
 
   const add = usingProvider
@@ -578,7 +608,11 @@ export const PromptInput = ({
 
   const remove = usingProvider
     ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
+    : (id: string) => {
+        // Trigger onFileRemove callback
+        if (onFileRemove) {
+          onFileRemove(id);
+        }
         setItems((prev) => {
           const found = prev.find((file) => file.id === id);
           if (found?.url) {
@@ -586,6 +620,7 @@ export const PromptInput = ({
           }
           return prev.filter((file) => file.id !== id);
         });
+      };
 
   const clear = usingProvider
     ? () => controller.attachments.clear()
