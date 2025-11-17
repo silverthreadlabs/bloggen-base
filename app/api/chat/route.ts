@@ -103,18 +103,32 @@ export async function POST(req: Request) {
             const metadata = lastMessage.metadata as { fileIds?: string[] } | undefined;
             const fileIds = metadata?.fileIds || [];
             
-            // Add file references to parts
+            // Add file references to parts only if not already present (optimistic UI adds them)
             const partsWithFiles = [...lastMessage.parts];
-            if (fileIds.length > 0) {
+            
+            // Check if file/image parts already exist in the message
+            // Cast to any to check for custom part types (file, image) that AI SDK adds
+            const hasFileParts = partsWithFiles.some((part: any) => 
+              part.type === 'file' || (part.type === 'image' && part.image)
+            );
+            
+            // Only add file parts if they don't exist (for backward compatibility or if optimistic UI didn't add them)
+            if (fileIds.length > 0 && !hasFileParts) {
               for (const fileId of fileIds) {
                 const fileRecord = await getFileById(fileId);
                 if (fileRecord) {
-                  partsWithFiles.push({
-                    type: 'file' as const,
-                    data: fileRecord.url,
-                    mimeType: fileRecord.type,
-                    filename: fileRecord.name,
-                  } as any);
+                  if (fileRecord.type.startsWith('image/')) {
+                    partsWithFiles.push({
+                      type: 'image' as const,
+                      image: fileRecord.url,
+                    } as any);
+                  } else {
+                    partsWithFiles.push({
+                      type: 'file' as const,
+                      data: fileRecord.url,
+                      mimeType: fileRecord.type,
+                    } as any);
+                  }
                 }
               }
             }
