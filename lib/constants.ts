@@ -12,25 +12,89 @@ export const guestRegex = /^guest-\d+$/;
 
 export const DUMMY_PASSWORD = generateDummyPassword();
 
-
-export const allowedTypes = [
+/**
+ * FILE TYPE CONFIGURATION
+ * Single source of truth for all allowed file types and their extensions.
+ * To add a new file type, simply add an entry to this array.
+ */
+export const ALLOWED_FILE_TYPES = [
   // PDF Documents
-  'application/pdf', // .pdf
+  {
+    mimeType: 'application/pdf',
+    extensions: ['pdf'],
+    category: 'document',
+    sendAsFile: true, // Can be sent directly to OpenAI as file part
+  },
 
-  // Microsoft Office Documents
-  'application/msword', // .doc
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-  'application/vnd.ms-powerpoint', // .ppt
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-  'application/vnd.ms-excel', // .xls (legacy support)
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  // Microsoft Office Documents (must be converted to text)
+  {
+    mimeType: 'application/msword',
+    extensions: ['doc'],
+    category: 'document',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    extensions: ['docx'],
+    category: 'document',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'application/vnd.ms-powerpoint',
+    extensions: ['ppt'],
+    category: 'document',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    extensions: ['pptx'],
+    category: 'document',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'application/vnd.ms-excel',
+    extensions: ['xls'],
+    category: 'document',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    extensions: ['xlsx'],
+    category: 'document',
+    sendAsFile: false,
+  },
 
-  // Text Files
-  'text/plain', // .txt
-  'text/markdown', // .md
+  // Text Files (must be converted to text)
+  {
+    mimeType: 'text/plain',
+    extensions: ['txt'],
+    category: 'text',
+    sendAsFile: false,
+  },
+  {
+    mimeType: 'text/markdown',
+    extensions: ['md'],
+    category: 'text',
+    sendAsFile: false,
+  },
 
-  // Images
-  'image/jpeg', // .jpg, .jpeg
-  'image/png', // .png
-  'image/svg+xml', // .svg
-];
+  // Images (can be sent directly to OpenAI)
+  {
+    mimeType: 'image/jpeg',
+    extensions: ['jpg', 'jpeg'],
+    category: 'image',
+    sendAsFile: true,
+  },
+  {
+    mimeType: 'image/png',
+    extensions: ['png'],
+    category: 'image',
+    sendAsFile: true,
+  },
+  {
+    mimeType: 'image/svg+xml',
+    extensions: ['svg'],
+    category: 'image',
+    sendAsFile: true,
+  },
+] as const;
