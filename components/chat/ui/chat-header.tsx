@@ -58,9 +58,7 @@ export function ChatHeader({
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+                <Button variant="ghost" size="sm" iconOnly leadingIcon={<MoreVertical className="h-4 w-4" />} className="h-8 w-8 p-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 {onPinChat && (
@@ -85,9 +83,8 @@ export function ChatHeader({
               variant="outline"
               size="sm"
               onClick={handleShare}
-              className="h-8 gap-2"
+              leadingIcon={<Share2 className="h-4 w-4" />}
             >
-              <Share2 className="h-4 w-4" />
               <span>Share</span>
             </Button>
           </>
@@ -99,8 +96,8 @@ export function ChatHeader({
             size="sm"
             onClick={onNewChatAction}
             className="h-8 gap-2"
+            leadingIcon={<SquarePen className="h-4 w-4" />}
           >
-            <SquarePen className="h-4 w-4" />
             <span>New Chat</span>
           </Button>
         ) : (
@@ -109,9 +106,10 @@ export function ChatHeader({
             size="sm"
             onClick={onNewChatAction}
             className="h-8 w-8 p-0"
-          >
-            <SquarePen className="h-4 w-4" />
-          </Button>
+            iconOnly
+            leadingIcon={<SquarePen className="h-4 w-4" />}
+          />
+
         )}
       </div>
     </div>

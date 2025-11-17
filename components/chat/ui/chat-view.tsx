@@ -90,7 +90,7 @@ export function ChatView({
   const isNewChat = messages.length === 0 && !chatId;
 
   return (
-    <div className="relative flex size-full w-full flex-col overflow-hidden">
+    <div className="relative flex size-full pb-4 w-full flex-col overflow-hidden">
       <ChatHeader
         title={chatTitle}
         chatId={chatId}
@@ -135,7 +135,7 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4">
+      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4 rounded-lg">
         {/* Suggestions commented out for now */}
         {/* <Suggestions className="px-4">
           {suggestions.map((suggestion) => (

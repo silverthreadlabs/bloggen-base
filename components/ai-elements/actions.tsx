@@ -30,20 +30,23 @@ export const Action = ({
   className,
   variant = 'ghost',
   size = 'sm',
+  iconOnly = false,
   ...props
 }: ActionProps) => {
   const button = (
     <Button
       className={cn(
-        'relative size-9 p-1.5 text-canvas-text hover:text-canvas-text-contrast',
-        className,
+      'relative size-9 p-1.5 text-canvas-text hover:text-canvas-text-contrast',
+      className,
       )}
       size={size}
       type="button"
       variant={variant}
+      iconOnly
+      leadingIcon={children as React.ReactElement}
       {...props}
     >
-      {children}
+      {/* {children} */}
       <span className="sr-only">{label || tooltip}</span>
     </Button>
   );

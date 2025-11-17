@@ -93,9 +93,9 @@ export function ChatInput({
   }, [fileUploads]);
 
   return (
-    <PromptInput 
-      globalDrop 
-      multiple 
+    <PromptInput
+      globalDrop
+      multiple
       accept={getFileInputAccept()}
       maxFileSize={20 * 1024 * 1024} // 20MB
       onError={(error) => {
@@ -119,6 +119,8 @@ export function ChatInput({
           className="min-h-12 max-h-24 mb-2 text-sm"
           name="context"
         />
+        <div className="w-full h-px bg-canvas-line"></div>
+
         {/* <PromptInputTextarea
           onChange={(event) => onImageUrlChangeAction(event.target.value)}
           value={imageUrl}
@@ -151,6 +153,23 @@ export function ChatInput({
             onChange={onLengthChangeAction}
             disabled={disabled}
           />
+          {/* <PromptInputSpeechButton
+            textareaRef={textareaRef}
+            onTranscriptionChange={(transcribedText) => {
+              onTextChangeAction(transcribedText);
+            }}
+            disabled={disabled}
+          /> */}
+          {/* <PromptInputButton
+            onClick={() => onWebSearchChangeAction(!useWebSearch)}
+            variant={useWebSearch ? 'solid' : 'ghost'}
+            disabled={disabled}
+          >
+            <GlobeIcon size={16} />
+            <span>Search</span>
+          </PromptInputButton> */}
+        </PromptInputTools>
+        <div className='flex flex-row items-center gap-2'>
           <PromptInputSpeechButton
             textareaRef={textareaRef}
             onTranscriptionChange={(transcribedText) => {
@@ -158,25 +177,18 @@ export function ChatInput({
             }}
             disabled={disabled}
           />
-          <PromptInputButton
-            onClick={() => onWebSearchChangeAction(!useWebSearch)}
-            variant={useWebSearch ? 'solid' : 'ghost'}
-            disabled={disabled}
-          >
-            <GlobeIcon size={16} />
-            <span>Search</span>
-          </PromptInputButton>
-        </PromptInputTools>
-        <PromptInputSubmit
-          disabled={disabled || fileUploads.isAnyUploading() || !(text.trim() || status)}
-          status={status}
-          onClick={(e) => {
-            if (status === 'streaming') {
-              e.preventDefault();
-              onStopAction();
-            }
-          }}
-        />
+          <PromptInputSubmit
+            disabled={disabled || fileUploads.isAnyUploading() || !(text.trim() || status)}
+            status={status}
+            iconOnly
+            onClick={(e) => {
+              if (status === 'streaming') {
+                e.preventDefault();
+                onStopAction();
+              }
+            }}
+          />
+        </div>
       </PromptInputFooter>
     </PromptInput>
   );

@@ -984,7 +984,7 @@ export const PromptInputTools = ({
   className,
   ...props
 }: PromptInputToolsProps) => (
-  <div className={cn('flex items-center gap-1', className)} {...props} />
+  <div className={cn('flex items-center gap-2', className)} {...props} />
 );
 
 export type PromptInputButtonProps = ComponentProps<typeof InputGroupButton>;
@@ -993,6 +993,8 @@ export const PromptInputButton = ({
   variant = 'ghost',
   className,
   size,
+  iconOnly,
+  leadingIcon,
   ...props
 }: PromptInputButtonProps) => {
   const newSize =
@@ -1004,6 +1006,8 @@ export const PromptInputButton = ({
       size={newSize}
       type="button"
       variant={variant}
+      iconOnly={iconOnly}
+      leadingIcon={leadingIcon}
       {...props}
     />
   );
@@ -1022,9 +1026,7 @@ export const PromptInputActionMenuTrigger = ({
   ...props
 }: PromptInputActionMenuTriggerProps) => (
   <DropdownMenuTrigger asChild>
-    <PromptInputButton className={className} {...props}>
-      {children ?? <PlusIcon className="size-4" />}
-    </PromptInputButton>
+    <PromptInputButton className={className} {...props} iconOnly leadingIcon={children ? undefined : <PlusIcon className="size-4" />} />
   </DropdownMenuTrigger>
 );
 
@@ -1061,6 +1063,8 @@ export const PromptInputSubmit = ({
   size = 'icon-sm',
   status,
   children,
+  iconOnly,
+  leadingIcon,
   ...props
 }: PromptInputSubmitProps) => {
   let Icon = <SendIcon className="size-4" />;
@@ -1080,10 +1084,10 @@ export const PromptInputSubmit = ({
       size={size}
       type="submit"
       variant={variant}
+      iconOnly={iconOnly}
+      leadingIcon={children ? undefined : Icon}
       {...props}
-    >
-      {children ?? Icon}
-    </InputGroupButton>
+    />
   );
 };
 
@@ -1242,9 +1246,9 @@ export const PromptInputSpeechButton = ({
       disabled={!recognition}
       onClick={toggleListening}
       {...props}
-    >
-      <MicIcon className="size-4" />
-    </PromptInputButton>
+      iconOnly
+      leadingIcon={<MicIcon className="size-4" />}
+    />
   );
 };
 
