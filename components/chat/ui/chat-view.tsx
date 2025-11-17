@@ -9,6 +9,7 @@ import {
 import { Loader } from '@/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
+import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
 
 import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
@@ -21,6 +22,7 @@ type Props = {
   isLoading: boolean;
   isLoadingChat?: boolean;
   isProcessing?: boolean;
+  fileUploads: ReturnType<typeof useFileUploads>;
   text: string;
   setText: (text: string) => void;
   context: string;
@@ -73,6 +75,7 @@ export function ChatView({
   chatTitle,
   chatId,
   pinned = false,
+  fileUploads,
   onSubmit,
   onSuggestionClick,
   onDelete,
@@ -161,6 +164,7 @@ export function ChatView({
             length={length}
             onLengthChangeAction={setLength}
             status={status}
+            fileUploads={fileUploads}
             onSubmitAction={onSubmit}
             onStopAction={onStop}
             disabled={isLoadingChat}

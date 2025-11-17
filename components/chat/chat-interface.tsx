@@ -1,12 +1,12 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
-import { validateFiles } from '@/lib/utils/file-validation';
+import { useFileUploads } from '@/lib/hooks/use-file-uploads';
 import { 
   getToneModifierWithMarkers, 
   getLengthModifierWithMarkers,
@@ -144,6 +144,17 @@ export function ChatInterface({
   const pinned = useChatPinStatus(chatId);
   const updateChatTitleInCache = useUpdateChatTitleInCache();
 
+  // File uploads hook - uploads immediately on file selection
+  const fileUploads = useFileUploads({
+    chatId,
+    onUploadComplete: (fileId, file) => {
+      console.log('[Chat] File uploaded:', file.name, fileId);
+    },
+    onUploadError: (error, file) => {
+      console.error('[Chat] File upload failed:', file.name, error);
+    },
+  });
+
   const {
     messages,
     sendMessage,
@@ -217,6 +228,12 @@ export function ChatInterface({
 
   const handleSubmit = useCallback(
     async (message: PromptInputMessage) => {
+      // Check if any files are still uploading
+      if (fileUploads.isAnyUploading()) {
+        toast.error('Please wait for files to finish uploading');
+        return;
+      }
+
       if (!message.text?.trim() || isProcessing) return;
 
       const contextWithMarkers = message.context || '';
@@ -229,93 +246,31 @@ export function ChatInterface({
 
       const messageParts: any[] = [{ type: 'text', text: message.text }];
       
-      // Validate files before processing
-      if (message.files && message.files.length > 0) {
-        const filesToValidate = message.files
-          .map((f) => (f as any).__file as File)
-          .filter(Boolean);
-        
-        if (filesToValidate.length > 0) {
-          const { valid, invalid } = validateFiles(filesToValidate);
-          
-          // Show error for invalid files
-          if (invalid.length > 0) {
-            invalid.forEach(({ file, error }) => {
-              toast.error(`${file.name}: ${error}`);
-            });
-            
-            // If all files are invalid, don't send the message
-            if (valid.length === 0) {
-              return;
-            }
-          }
-          
-          // Only keep valid files
-          message.files = message.files.filter((fileUIPart) => {
-            const file = (fileUIPart as any).__file as File;
-            return file && valid.includes(file);
-          });
-        }
-      }
+      // Get uploaded file IDs and details from the upload hook
+      const fileIds = fileUploads.getUploadedFileIds();
+      const uploadedFiles = fileUploads.getUploadedFiles();
       
-      // Add file preview parts immediately for optimistic UI
-      if (message.files && message.files.length > 0) {
-        message.files.forEach((fileUIPart) => {
+      // Add file attachments to message parts for optimistic UI
+      for (const file of uploadedFiles) {
+        if (file.type.startsWith('image/')) {
+          messageParts.push({
+            type: 'image',
+            image: file.url,
+          });
+        } else {
           messageParts.push({
             type: 'file',
-            url: fileUIPart.url || '',
-            mediaType: fileUIPart.mediaType || 'application/octet-stream',
-            filename: (fileUIPart as any).filename || 'Attachment',
-            __uploading: true,
-            __file: (fileUIPart as any).__file,
+            data: file.url,
+            mimeType: file.type,
           });
-        });
+        }
       }
       
       // Clear input immediately for better UX
       setText('');
       setContext('');
       setImageUrl('');
-      
-      // Prepare file uploads (upload immediately, don't wait for completion)
-      let fileIds: string[] = [];
-      
-      if (message.files && message.files.length > 0) {
-        // Start all uploads in parallel
-        const uploadPromises = message.files.map(async (fileUIPart) => {
-          const file = (fileUIPart as any).__file as File;
-          if (!file) return null;
-
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const uploadResponse = await fetch('/api/files', {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (!uploadResponse.ok) {
-              throw new Error(`Failed to upload ${file.name}`);
-            }
-
-            const { id: fileId } = await uploadResponse.json();
-            console.log('[ChatInterface] File uploaded:', file.name, 'ID:', fileId);
-            return fileId;
-          } catch (error) {
-            console.error('[ChatInterface] File upload error:', file.name, error);
-            toast.error(`Failed to upload ${file.name}`, {
-              description: error instanceof Error ? error.message : 'Please try again',
-            });
-            return null;
-          }
-        });
-
-        // Wait for all uploads to complete quickly (they should be fast for metadata)
-        const results = await Promise.all(uploadPromises);
-        fileIds = results.filter((id): id is string => id !== null);
-        console.log('[ChatInterface] All files uploaded, IDs:', fileIds);
-      }
+      fileUploads.clearAll();
 
       // Add image URL if provided
       if (message.imageUrl?.trim()) {
@@ -325,10 +280,8 @@ export function ChatInterface({
         });
       }
 
-      console.log('[ChatInterface] Sending message with', messageParts.length, 'parts and', fileIds.length, 'files');
-
-      // Send message with file IDs
-      // Backend will process files asynchronously during AI response generation
+      // Send message with file IDs in metadata for backend processing
+      // The parts above will ensure optimistic UI shows the attachments
       sendMessage(
         {
           parts: messageParts,
@@ -344,7 +297,7 @@ export function ChatInterface({
         },
       );
     },
-    [sendMessage, isProcessing],
+    [sendMessage, isProcessing, fileUploads, setText, setContext, setImageUrl],
   );
 
   const handleSuggestionClick = useCallback(
@@ -559,7 +512,7 @@ export function ChatInterface({
       status={status}
       isLoading={isLoading}
       isLoadingChat={isLoadingChat}
-      isProcessing={isProcessing}
+      isProcessing={isProcessing || fileUploads.isAnyUploading()}
       text={text}
       setText={setText}
       context={context}
@@ -576,6 +529,7 @@ export function ChatInterface({
       setLength={handleLengthChange}
       pinned={pinned}
       chatTitle={currentChat?.title || initialChat?.title}
+      fileUploads={fileUploads}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       onEdit={handleEdit}

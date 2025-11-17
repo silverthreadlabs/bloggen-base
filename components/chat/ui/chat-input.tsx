@@ -1,9 +1,11 @@
 'use client';
 
 import { GlobeIcon } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { getFileInputAccept } from '@/lib/utils/file-types';
+import { validateFile } from '@/lib/utils/file-validation';
+import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -41,6 +43,7 @@ type Props = {
   length: LengthOption;
   onLengthChangeAction: (length: LengthOption) => void;
   status: 'submitted' | 'streaming' | 'ready' | 'error';
+  fileUploads: ReturnType<typeof useFileUploads>;
   onSubmitAction: (message: PromptInputMessage) => void;
   onStopAction: () => void;
   disabled?: boolean;
@@ -62,11 +65,32 @@ export function ChatInput({
   length,
   onLengthChangeAction,
   status,
+  fileUploads,
   onSubmitAction,
   onStopAction,
   disabled = false,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle file additions - upload immediately using IDs from PromptInput
+  const handleFileAdd = useCallback((filesWithIds: Array<{ id: string; file: File }>) => {
+    for (const { id, file } of filesWithIds) {
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        toast.error(`${file.name}: ${validation.error}`);
+        continue;
+      }
+
+      // Start upload using the ID from PromptInput
+      fileUploads.uploadFile(id, file);
+    }
+  }, [fileUploads]);
+
+  // Handle file removal - delete from server if uploaded
+  const handleFileRemove = useCallback((fileId: string) => {
+    fileUploads.removeFile(fileId);
+  }, [fileUploads]);
 
   return (
     <PromptInput 
@@ -78,6 +102,8 @@ export function ChatInput({
         toast.error(error.message);
       }}
       onSubmit={onSubmitAction}
+      onFileAdd={handleFileAdd}
+      onFileRemove={handleFileRemove}
     >
       <PromptInputHeader>
         <PromptInputAttachments>
