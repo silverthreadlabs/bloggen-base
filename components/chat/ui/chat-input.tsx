@@ -2,6 +2,8 @@
 
 import { GlobeIcon } from 'lucide-react';
 import { useRef } from 'react';
+import { toast } from 'sonner';
+import { getFileInputAccept } from '@/lib/utils/file-types';
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -67,7 +69,16 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
-    <PromptInput globalDrop multiple onSubmit={onSubmitAction}>
+    <PromptInput 
+      globalDrop 
+      multiple 
+      accept={getFileInputAccept()}
+      maxFileSize={20 * 1024 * 1024} // 20MB
+      onError={(error) => {
+        toast.error(error.message);
+      }}
+      onSubmit={onSubmitAction}
+    >
       <PromptInputHeader>
         <PromptInputAttachments>
           {(attachment) => <PromptInputAttachment data={attachment} />}
