@@ -6,6 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
+import { validateFiles } from '@/lib/utils/file-validation';
 import { 
   getToneModifierWithMarkers, 
   getLengthModifierWithMarkers,
@@ -227,6 +228,49 @@ export function ChatInterface({
         .trim();
 
       const messageParts: any[] = [{ type: 'text', text: message.text }];
+      
+      // Validate files before processing
+      if (message.files && message.files.length > 0) {
+        const filesToValidate = message.files
+          .map((f) => (f as any).__file as File)
+          .filter(Boolean);
+        
+        if (filesToValidate.length > 0) {
+          const { valid, invalid } = validateFiles(filesToValidate);
+          
+          // Show error for invalid files
+          if (invalid.length > 0) {
+            invalid.forEach(({ file, error }) => {
+              toast.error(`${file.name}: ${error}`);
+            });
+            
+            // If all files are invalid, don't send the message
+            if (valid.length === 0) {
+              return;
+            }
+          }
+          
+          // Only keep valid files
+          message.files = message.files.filter((fileUIPart) => {
+            const file = (fileUIPart as any).__file as File;
+            return file && valid.includes(file);
+          });
+        }
+      }
+      
+      // Add file preview parts immediately for optimistic UI
+      if (message.files && message.files.length > 0) {
+        message.files.forEach((fileUIPart) => {
+          messageParts.push({
+            type: 'file',
+            url: fileUIPart.url || '',
+            mediaType: fileUIPart.mediaType || 'application/octet-stream',
+            filename: (fileUIPart as any).filename || 'Attachment',
+            __uploading: true,
+            __file: (fileUIPart as any).__file,
+          });
+        });
+      }
       
       // Clear input immediately for better UX
       setText('');

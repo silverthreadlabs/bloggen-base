@@ -75,7 +75,7 @@ import { cn } from '@/lib/utils';
 // ============================================================================
 
 export type AttachmentsContext = {
-  files: (FileUIPart & { id: string })[];
+  files: (FileUIPart & { id: string; __file?: File })[];
   add: (files: File[] | FileList) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -158,7 +158,7 @@ export function PromptInputProvider({
 
   // ----- attachments state (global when wrapped)
   const [attachements, setAttachements] = useState<
-    (FileUIPart & { id: string })[]
+    (FileUIPart & { id: string; __file?: File })[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const openRef = useRef<() => void>(() => {});
@@ -468,7 +468,7 @@ export const PromptInput = ({
   }, []);
 
   // ----- Local attachments (only used when no provider)
-  const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
+  const [items, setItems] = useState<(FileUIPart & { id: string; __file?: File })[]>([]);
   const files = usingProvider ? controller.attachments.files : items;
 
   const openFileDialogLocal = useCallback(() => {
@@ -480,11 +480,26 @@ export const PromptInput = ({
       if (!accept || accept.trim() === '') {
         return true;
       }
-      if (accept.includes('image/*')) {
-        return f.type.startsWith('image/');
+      
+      // Handle wildcard patterns like image/*
+      if (accept.includes('image/*') && f.type.startsWith('image/')) {
+        return true;
       }
-      // NOTE: keep simple; expand as needed
-      return true;
+      
+      // Check MIME type directly
+      const acceptedMimes = accept.split(',').map(s => s.trim()).filter(s => !s.startsWith('.'));
+      if (acceptedMimes.some(mime => f.type === mime)) {
+        return true;
+      }
+      
+      // Check file extension
+      const fileName = f.name.toLowerCase();
+      const acceptedExtensions = accept.split(',').map(s => s.trim()).filter(s => s.startsWith('.'));
+      if (acceptedExtensions.some(ext => fileName.endsWith(ext.toLowerCase()))) {
+        return true;
+      }
+      
+      return false;
     },
     [accept],
   );
@@ -493,21 +508,36 @@ export const PromptInput = ({
     (fileList: File[] | FileList) => {
       const incoming = Array.from(fileList);
       const accepted = incoming.filter((f) => matchesAccept(f));
-      if (incoming.length && accepted.length === 0) {
+      
+      // Report rejected files with their names
+      const rejected = incoming.filter((f) => !matchesAccept(f));
+      if (rejected.length > 0) {
+        const rejectedNames = rejected.map(f => f.name).join(', ');
         onError?.({
           code: 'accept',
-          message: 'No files match the accepted types.',
+          message: `File type not supported: ${rejectedNames}`,
         });
+      }
+      
+      if (incoming.length && accepted.length === 0) {
         return;
       }
+      
       const withinSize = (f: File) =>
         maxFileSize ? f.size <= maxFileSize : true;
       const sized = accepted.filter(withinSize);
-      if (accepted.length > 0 && sized.length === 0) {
+      
+      // Report files that are too large
+      const tooLarge = accepted.filter((f) => !withinSize(f));
+      if (tooLarge.length > 0) {
+        const largeNames = tooLarge.map(f => f.name).join(', ');
         onError?.({
           code: 'max_file_size',
-          message: 'All files exceed the maximum size.',
+          message: `File too large: ${largeNames}`,
         });
+      }
+      
+      if (accepted.length > 0 && sized.length === 0) {
         return;
       }
 
@@ -524,7 +554,7 @@ export const PromptInput = ({
             message: 'Too many files. Some were not added.',
           });
         }
-        const next: (FileUIPart & { id: string })[] = [];
+        const next: (FileUIPart & { id: string; __file?: File })[] = [];
         for (const file of capped) {
           next.push({
             id: nanoid(),
