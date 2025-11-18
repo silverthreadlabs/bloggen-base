@@ -55,7 +55,6 @@ export function useChatSync({ chatId, messages, enabled }: Props) {
             chatId,
             message: {
               role: 'assistant',
-              context: content,
               parts: message.parts,
             },
           });

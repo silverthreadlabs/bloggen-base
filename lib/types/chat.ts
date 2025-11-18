@@ -1,17 +1,34 @@
 import type { UIMessage } from '@ai-sdk/react';
 
 // ============================================================================
-// FILE ATTACHMENT TYPE
+// CHAT TYPES
 // ============================================================================
 
-export type FileAttachment = {
+export type Chat = {
   id: string;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  createdAt?: Date;
+  userId: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  pinned?: boolean;
 };
+
+export type ChatWithMessages = Chat & {
+  messages: UIMessage[];
+};
+
+export type CreateMessagePayload = {
+  role: 'user' | 'assistant' | 'system';
+  parts: any[];
+  attachments?: any[];
+  context?: string;
+};
+
+// ============================================================================
+// CHAT STATUS
+// ============================================================================
+
+export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error';
 
 // ============================================================================
 // HARDCODED MESSAGE TYPE
@@ -24,12 +41,6 @@ export type HardcodedMessageType = {
   avatar: string;
   name: string;
 };
-
-// ============================================================================
-// CHAT STATUS TYPE
-// ============================================================================
-
-export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error';
 
 // ============================================================================
 // RE-EXPORTS FROM AI SDK

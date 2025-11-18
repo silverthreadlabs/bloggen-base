@@ -1,5 +1,5 @@
 import type { UIMessage } from '@ai-sdk/react';
-import type { Chat, ChatWithMessages, CreateMessagePayload } from './types';
+import type { Chat, ChatWithMessages, CreateMessagePayload } from '@/lib/types/chat';
 
 // Chat API
 export async function fetchChats(): Promise<Chat[]> {

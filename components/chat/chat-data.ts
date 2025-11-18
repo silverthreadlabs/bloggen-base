@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import type { HardcodedMessageType } from './types';
+import type { HardcodedMessageType } from '@/lib/types/chat';
 
 // ============================================================================
 // HARDCODED MESSAGES

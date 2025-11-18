@@ -1,4 +1,4 @@
-import type { FileAttachment } from '@/components/chat/types';
+import type { FileAttachment } from '@/lib/types/files';
 import { isMimeTypeAllowed } from './file-types';
 
 /**
