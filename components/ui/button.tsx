@@ -38,9 +38,6 @@ const buttonVariants = cva(
         primary: '',
         neutral: '',
         secondary: '',
-        outline: '',
-        ghost: '',
-        link: '',
       },
       variant: {
         solid: '',
