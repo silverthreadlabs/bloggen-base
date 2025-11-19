@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { fetchChat, fetchChats } from './api';
 import { chatKeys } from './query-keys';
-import type { Chat, ChatWithMessages } from './types';
+import type { Chat, ChatWithMessages } from '@/lib/types/chat';
 import { useTogglePinChat } from './use-chat-mutations';
 
 /**

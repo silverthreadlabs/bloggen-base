@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { togglePinChat } from '@/lib/actions/chat-actions';
 import { createChat, deleteChat, updateChatTitle } from './api';
 import { chatKeys } from './query-keys';
-import type { Chat, ChatWithMessages } from './types';
+import type { Chat, ChatWithMessages } from '@/lib/types/chat';
 
 /**
  * Create a new chat

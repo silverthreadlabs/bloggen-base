@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { deleteMessage, saveMessage, updateMessage } from './api';
 import { chatKeys } from './query-keys';
-import type { ChatWithMessages, CreateMessagePayload } from './types';
+import type { ChatWithMessages, CreateMessagePayload } from '@/lib/types/chat';
 
 /**
  * Save a new message to a chat

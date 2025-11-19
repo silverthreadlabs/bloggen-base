@@ -15,7 +15,7 @@ import {
   LENGTH_MARKER_START,
   LENGTH_MARKER_END,
 } from '@/lib/config/message-modifiers';
-import type { ChatWithMessages } from '@/lib/hooks/chat';
+import type { ChatWithMessages } from '@/lib/types/chat';
 import { useChats, useUpdateChatTitleInCache } from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
 import { useMessageModifiers } from '@/lib/hooks/use-url-state';

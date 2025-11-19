@@ -13,7 +13,7 @@ export {
 } from './api';
 // Query Keys
 export { chatKeys } from './query-keys';
-export type { Chat, ChatWithMessages, CreateMessagePayload } from './types';
+export type { Chat, ChatWithMessages, CreateMessagePayload } from '@/lib/types/chat';
 // Chat Mutation Hooks
 export {
   useCreateChat,

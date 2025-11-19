@@ -20,7 +20,7 @@ export { LengthSelector, ToneSelector } from './selectors';
 // TYPE EXPORTS
 // ============================================================================
 
-export type { ChatStatus, HardcodedMessageType, UIMessage } from './types';
+export type { ChatStatus, HardcodedMessageType, UIMessage } from '@/lib/types/chat';
 
 // ============================================================================
 // DATA EXPORTS
