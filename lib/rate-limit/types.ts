@@ -14,6 +14,10 @@ export interface RateLimitConfig {
   window: number;
   /** Display name for the role */
   name: string;
+  /** Whether to use browser fingerprinting for anonymous users (default: true) */
+  useBrowserFingerprint?: boolean;
+  /** Whether to apply special handling for shared networks (default: true) */
+  handleSharedNetworks?: boolean;
 }
 
 /**
@@ -32,4 +36,17 @@ export interface RateLimitResult {
   identifier: string;
   /** Error message if rate limit exceeded */
   error?: string;
+}
+
+/**
+ * Debug information for rate limiting
+ * Useful for monitoring and troubleshooting
+ */
+export interface RateLimitDebugInfo {
+  ip: string;
+  fingerprint: string;
+  identifier: string;
+  role: RateLimitRole;
+  isSharedNetwork: boolean;
+  config: RateLimitConfig;
 }

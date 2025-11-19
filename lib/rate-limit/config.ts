@@ -6,19 +6,25 @@ import type { RateLimitConfig, RateLimitRole } from './types';
  */
 export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
   anonymous: {
-    limit: 30,
+    limit: 2,
     window: 86400, // 24 hours in seconds (1 day)
     name: 'Anonymous',
+    useBrowserFingerprint: true,
+    handleSharedNetworks: true,
   },
   registered: {
     limit: 9000,
     window: 86400, // 24 hours in seconds (1 day)
     name: 'Registered',
+    useBrowserFingerprint: false, // Not needed for registered users
+    handleSharedNetworks: false,
   },
   paid: {
     limit: 100,
     window: 86400, // 24 hours in seconds (1 day)
     name: 'Paid',
+    useBrowserFingerprint: false, // Not needed for paid users
+    handleSharedNetworks: false,
   },
 };
 
