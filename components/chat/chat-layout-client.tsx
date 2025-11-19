@@ -14,7 +14,7 @@ export function ChatLayoutClient({ children }: { children: ReactNode }) {
       <ChatSidebar currentChatId={chatId} />
       <SidebarInset className="flex flex-col h-screen overflow-hidden w-full">
         <div className="flex flex-1 flex-col overflow-hidden w-full">
-          <div className="h-full w-full max-w-4xl mx-auto">{children}</div>
+          <div className="h-full w-full mx-auto">{children}</div>
         </div>
       </SidebarInset>
     </SidebarProvider>
