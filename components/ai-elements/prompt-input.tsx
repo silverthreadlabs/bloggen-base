@@ -305,7 +305,7 @@ export function PromptInputAttachment({
           {...props}
         >
           <div className="relative size-5 shrink-0">
-            <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-canvas-bg transition-opacity group-hover:opacity-0">
+            <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-canvas-bg">
               {isImage ? (
                 <img
                   alt={filename || 'attachment'}
@@ -320,23 +320,25 @@ export function PromptInputAttachment({
                 </div>
               )}
             </div>
-            <Button
-              aria-label="Remove attachment"
-              className="absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
-              onClick={(e) => {
-                e.stopPropagation();
-                attachments.remove(data.id);
-              }}
-              type="button"
-              variant="ghost"
-              iconOnly
-              leadingIcon={<XIcon />}
-            >
-              <span className="sr-only">Remove</span>
-            </Button>
           </div>
 
           <span className="flex-1 truncate">{attachmentLabel}</span>
+
+          <Button
+            aria-label="Remove attachment"
+            // className="size-4 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              attachments.remove(data.id);
+            }}
+            type="button"
+            variant="ghost"
+            iconOnly
+            leadingIcon={<XIcon size={12} />}
+            size="sm"
+          >
+            <span className="sr-only">Remove</span>
+          </Button>
         </div>
       </HoverCardTrigger>
       <PromptInputHoverCardContent className="w-auto p-2 max-w-72">

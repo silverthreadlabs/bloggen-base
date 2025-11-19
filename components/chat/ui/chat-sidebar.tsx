@@ -82,7 +82,6 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deferredSearchQuery, setDeferredSearchQuery] = useState('');
-
   // Extract current chat ID from pathname, fallback to prop
   const currentChatId = useMemo(() => {
     const match = pathname?.match(/\/chat\/([^/?]+)/);
@@ -114,8 +113,9 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
         totalChats: 0,
       };
 
-    const searchTerm = deferredSearchQuery.toLowerCase().trim();
 
+    const searchTerm = deferredSearchQuery.toLowerCase().trim();
+    
     const filtered = chats.filter((chat) => {
       if (!searchTerm) return true;
       // Search in both title and content if available
