@@ -11,8 +11,8 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      'group flex w-full items-end justify-end gap-2 py-4',
-      from === 'user' ? 'is-user' : 'is-assistant flex-row-reverse justify-end',
+      'group flex w-full items-start gap-2 py-4',
+      from === 'user' ? 'is-user justify-end' : 'is-assistant justify-start',
       className,
     )}
     {...props}
@@ -20,19 +20,19 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 const messageContentVariants = cva(
-  'is-user:dark flex flex-col gap-2 overflow-hidden rounded-lg text-sm',
+  'flex flex-col gap-2 overflow-hidden text-sm',
   {
     variants: {
       variant: {
         contained: [
-          'max-w-[80%] px-4 py-3',
+          'px-4 py-3',
           // Use a softer background for user messages to reduce visual harshness
-          'group-[.is-user]:bg-primary-bg group-[.is-user]:text-primary-text-contrast',
-          'group-[.is-assistant]:bg-secondary-bg group-[.is-assistant]:text-canvas-text-contrast',
+          'group-[.is-user]:bg-canvas-bg group-[.is-user]:text-canvas-text-contrast group-[.is-user]:rounded-lg group-[.is-user]:max-w-fit',
+          'group-[.is-assistant]:bg-transparent group-[.is-assistant]:text-canvas-text-contrast group-[.is-assistant]:w-full',
         ],
         flat: [
-          'group-[.is-user]:max-w-[80%] group-[.is-user]:bg-secondary-bg group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-canvas-text-contrast',
-          'group-[.is-assistant]:text-canvas-text-contrast',
+          'group-[.is-user]:bg-secondary-bg group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-canvas-text-contrast group-[.is-user]:rounded-lg group-[.is-user]:max-w-fit',
+          'group-[.is-assistant]:text-canvas-text-contrast group-[.is-assistant]:w-full',
         ],
       },
     },

@@ -244,7 +244,7 @@ export function MessageList({
                 </Actions>
               )}
             </div>
-            <MessageAvatar role={message.role as 'user' | 'assistant'} />
+            {/* <MessageAvatar role={message.role as 'user' | 'assistant'} /> */}
           </Message>
         );
       })}

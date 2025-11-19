@@ -34,20 +34,20 @@ export function FileAttachmentDisplay({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 opacity-70',
+          'inline-flex items-center gap-2 rounded-md border border-canvas-border bg-canvas-bg px-2.5 py-1.5 opacity-70 max-w-fit',
           className,
         )}
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
+        <div className="flex size-6 shrink-0 items-center justify-center rounded bg-primary/10">
           {isImage ? (
-            <ImageIcon className="size-5 text-primary" />
+            <ImageIcon className="size-3.5 text-primary" />
           ) : (
-            <FileIcon className="size-5 text-primary" />
+            <FileIcon className="size-3.5 text-primary" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-sm">{filename}</p>
-          <p className="truncate text-muted-foreground text-xs">
+          <p className="truncate font-medium text-xs">{filename}</p>
+          <p className="truncate text-muted-foreground text-[10px]">
             {sizeDisplay}
           </p>
         </div>
@@ -59,16 +59,16 @@ export function FileAttachmentDisplay({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3',
+          'inline-flex items-center gap-2 rounded-md border border-canvas-border bg-canvas-bg px-2.5 py-1.5 max-w-fit',
           className,
         )}
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-          <FileIcon className="size-5 text-primary" />
+        <div className="flex size-6 shrink-0 items-center justify-center rounded bg-primary/10">
+          <FileIcon className="size-3.5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-sm">{filename}</p>
-          <p className="truncate text-muted-foreground text-xs text-red-500">
+          <p className="truncate font-medium text-xs">{filename}</p>
+          <p className="truncate text-muted-foreground text-[10px] text-red-500">
             Invalid file URL
           </p>
         </div>
@@ -82,14 +82,14 @@ export function FileAttachmentDisplay({
     return (
       <div
         className={cn(
-          'group relative overflow-hidden rounded-lg border border-canvas-border bg-canvas-bg',
+          'group relative overflow-hidden rounded-lg border border-canvas-border bg-canvas-bg w-full',
           isUploading && 'opacity-70',
           className,
         )}
       >
         {shouldUseImgTag ? (
           <div className="block">
-            <div className="relative h-48 w-full">
+            <div className="relative aspect-square w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={fileUrl}
@@ -97,8 +97,8 @@ export function FileAttachmentDisplay({
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
               />
             </div>
-            <div className="bg-secondary-bg-hover/80 p-2 backdrop-blur-sm">
-              <p className="truncate text-xs">{filename}</p>
+            <div className="bg-secondary-bg-hover/80 px-2 py-1 backdrop-blur-sm">
+              <p className="truncate text-[10px]">{filename}</p>
             </div>
           </div>
         ) : (
@@ -108,7 +108,7 @@ export function FileAttachmentDisplay({
             rel="noopener noreferrer"
             className="block"
           >
-            <div className="relative h-48 w-full">
+            <div className="relative aspect-square w-full">
               <Image
                 src={fileUrl}
                 alt={filename}
@@ -117,8 +117,8 @@ export function FileAttachmentDisplay({
                 unoptimized
               />
             </div>
-            <div className="bg-secondary-bg-hover/80 p-2 backdrop-blur-sm">
-              <p className="truncate text-xs">{filename}</p>
+            <div className="bg-secondary-bg-hover/80 px-2 py-1 backdrop-blur-sm">
+              <p className="truncate text-[10px]">{filename}</p>
             </div>
           </a>
         )}
@@ -129,13 +129,13 @@ export function FileAttachmentDisplay({
   // Non-image file display
   const FileContent = (
     <>
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-        <FileIcon className="size-5 text-primary" />
+      <div className="flex size-6 shrink-0 items-center justify-center rounded bg-primary/10">
+        <FileIcon className="size-3.5 text-primary" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-sm">{filename}</p>
+        <p className="truncate font-medium text-xs">{filename}</p>
         {file.mediaType && (
-          <p className="truncate text-muted-foreground text-xs">
+          <p className="truncate text-muted-foreground text-[10px]">
             {file.mediaType}
           </p>
         )}
@@ -147,7 +147,7 @@ export function FileAttachmentDisplay({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 opacity-70',
+          'inline-flex items-center gap-2 rounded-md border border-canvas-border bg-canvas-bg px-2.5 py-1.5 opacity-70 max-w-fit',
           className,
         )}
       >
@@ -162,7 +162,7 @@ export function FileAttachmentDisplay({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'flex items-center gap-3 rounded-lg border border-canvas-border bg-canvas-bg p-3 transition-colors hover:bg-secondary-bg-hover',
+        'inline-flex items-center gap-2 rounded-md border border-canvas-border bg-canvas-bg px-2.5 py-1.5 transition-colors hover:bg-secondary-bg-hover max-w-fit',
         className,
       )}
     >
@@ -182,19 +182,35 @@ export function FileAttachmentsGrid({
 }: FileAttachmentsGridProps) {
   if (!files || files.length === 0) return null;
 
+  // Separate images from other files
+  const images = files.filter(f => f.mediaType?.startsWith('image/'));
+  const nonImages = files.filter(f => !f.mediaType?.startsWith('image/'));
+
   return (
-    <div
-      className={cn(
-        'grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3',
-        className,
+    <div className={cn('flex flex-col gap-2', className)}>
+      {/* Display images in a grid (max 3 per row) */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-md">
+          {images.map((file, index) => (
+            <FileAttachmentDisplay
+              key={file.url || `img-${index}`}
+              file={file}
+            />
+          ))}
+        </div>
       )}
-    >
-      {files.map((file, index) => (
-        <FileAttachmentDisplay
-          key={file.url || index}
-          file={file}
-        />
-      ))}
+      
+      {/* Display non-image files in a column */}
+      {nonImages.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {nonImages.map((file, index) => (
+            <FileAttachmentDisplay
+              key={file.url || `file-${index}`}
+              file={file}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

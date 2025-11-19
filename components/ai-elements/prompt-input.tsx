@@ -161,7 +161,7 @@ export function PromptInputProvider({
     (FileUIPart & { id: string; __file?: File })[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const openRef = useRef<() => void>(() => {});
+  const openRef = useRef<() => void>(() => { });
 
   const add = useCallback((files: File[] | FileList) => {
     const incoming = Array.from(files);
@@ -298,7 +298,7 @@ export function PromptInputAttachment({
       <HoverCardTrigger asChild>
         <div
           className={cn(
-            'group relative flex h-8 cursor-default select-none items-center gap-1.5 rounded-md border border-canvas-border px-1.5 font-medium text-sm transition-all hover:bg-secondary-bg-hover hover:text-canvas-text-contrast',
+            'group relative flex h-8 max-w-72 w-fit cursor-default select-none items-center gap-1.5 rounded-md border border-canvas-border px-1.5 font-medium text-sm transition-all hover:bg-secondary-bg-hover hover:text-canvas-text-contrast',
             className,
           )}
           key={data.id}
@@ -329,8 +329,9 @@ export function PromptInputAttachment({
               }}
               type="button"
               variant="ghost"
+              iconOnly
+              leadingIcon={<XIcon />}
             >
-              <XIcon />
               <span className="sr-only">Remove</span>
             </Button>
           </div>
@@ -338,10 +339,10 @@ export function PromptInputAttachment({
           <span className="flex-1 truncate">{attachmentLabel}</span>
         </div>
       </HoverCardTrigger>
-      <PromptInputHoverCardContent className="w-auto p-2">
+      <PromptInputHoverCardContent className="w-auto p-2 max-w-72">
         <div className="w-auto space-y-3">
           {isImage && (
-            <div className="flex max-h-96 w-96 items-center justify-center overflow-hidden rounded-md border">
+            <div className="flex h-fit max-w-72 items-center justify-center overflow-hidden rounded-md border">
               <img
                 alt={filename || 'attachment preview'}
                 className="max-h-full max-w-full object-contain"
@@ -492,25 +493,25 @@ export const PromptInput = ({
       if (!accept || accept.trim() === '') {
         return true;
       }
-      
+
       // Handle wildcard patterns like image/*
       if (accept.includes('image/*') && f.type.startsWith('image/')) {
         return true;
       }
-      
+
       // Check MIME type directly
       const acceptedMimes = accept.split(',').map(s => s.trim()).filter(s => !s.startsWith('.'));
       if (acceptedMimes.some(mime => f.type === mime)) {
         return true;
       }
-      
+
       // Check file extension
       const fileName = f.name.toLowerCase();
       const acceptedExtensions = accept.split(',').map(s => s.trim()).filter(s => s.startsWith('.'));
       if (acceptedExtensions.some(ext => fileName.endsWith(ext.toLowerCase()))) {
         return true;
       }
-      
+
       return false;
     },
     [accept],
@@ -520,7 +521,7 @@ export const PromptInput = ({
     (fileList: File[] | FileList) => {
       const incoming = Array.from(fileList);
       const accepted = incoming.filter((f) => matchesAccept(f));
-      
+
       // Report rejected files with their names
       const rejected = incoming.filter((f) => !matchesAccept(f));
       if (rejected.length > 0) {
@@ -530,15 +531,15 @@ export const PromptInput = ({
           message: `File type not supported: ${rejectedNames}`,
         });
       }
-      
+
       if (incoming.length && accepted.length === 0) {
         return;
       }
-      
+
       const withinSize = (f: File) =>
         maxFileSize ? f.size <= maxFileSize : true;
       const sized = accepted.filter(withinSize);
-      
+
       // Report files that are too large
       const tooLarge = accepted.filter((f) => !withinSize(f));
       if (tooLarge.length > 0) {
@@ -548,29 +549,29 @@ export const PromptInput = ({
           message: `File too large: ${largeNames}`,
         });
       }
-      
+
       if (accepted.length > 0 && sized.length === 0) {
         return;
       }
 
       // Create items outside of setItems to avoid calling onFileAdd during state update
       let newItems: (FileUIPart & { id: string; __file?: File })[] = [];
-      
+
       setItems((prev) => {
         // Filter out files that are already in the list (by name, size, and type)
         const existingFiles = new Set(
           prev.map(item => `${item.filename}-${item.mediaType}`)
         );
-        
-        const uniqueFiles = sized.filter(file => 
+
+        const uniqueFiles = sized.filter(file =>
           !existingFiles.has(`${file.name}-${file.type}`)
         );
-        
+
         if (uniqueFiles.length === 0) {
           // All files are duplicates
           return prev;
         }
-        
+
         const capacity =
           typeof maxFiles === 'number'
             ? Math.max(0, maxFiles - prev.length)
@@ -583,7 +584,7 @@ export const PromptInput = ({
             message: 'Too many files. Some were not added.',
           });
         }
-        
+
         newItems = [];
         for (const file of capped) {
           newItems.push({
@@ -596,10 +597,10 @@ export const PromptInput = ({
             __file: file as any,
           });
         }
-        
+
         return prev.concat(newItems);
       });
-      
+
       // Call onFileAdd AFTER state update completes
       if (onFileAdd && newItems.length > 0) {
         // Map to { id, file } objects for easier handling
@@ -617,39 +618,39 @@ export const PromptInput = ({
   const remove = usingProvider
     ? (id: string) => controller.attachments.remove(id)
     : (id: string) => {
-        // Trigger onFileRemove callback
-        if (onFileRemove) {
-          onFileRemove(id);
+      // Trigger onFileRemove callback
+      if (onFileRemove) {
+        onFileRemove(id);
+      }
+      setItems((prev) => {
+        const found = prev.find((file) => file.id === id);
+        if (found?.url) {
+          URL.revokeObjectURL(found.url);
         }
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
-        // Reset the file input element so the same file can be selected again
-        if (inputRef.current) {
-          inputRef.current.value = '';
-        }
-      };
+        return prev.filter((file) => file.id !== id);
+      });
+      // Reset the file input element so the same file can be selected again
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+    };
 
   const clear = usingProvider
     ? () => controller.attachments.clear()
     : () => {
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
-            }
+      setItems((prev) => {
+        for (const file of prev) {
+          if (file.url) {
+            URL.revokeObjectURL(file.url);
           }
-          return [];
-        });
-        // Reset the file input element so the same file can be selected again
-        if (inputRef.current) {
-          inputRef.current.value = '';
         }
-      };
+        return [];
+      });
+      // Reset the file input element so the same file can be selected again
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+    };
 
   const openFileDialog = usingProvider
     ? () => controller.attachments.openFileDialog()
@@ -755,23 +756,23 @@ export const PromptInput = ({
     const text = usingProvider
       ? controller.textInput.value
       : (() => {
-          const formData = new FormData(form);
-          return (formData.get('message') as string) || '';
-        })();
-    
+        const formData = new FormData(form);
+        return (formData.get('message') as string) || '';
+      })();
+
     const context = usingProvider
       ? controller.contextInput?.value || ''
       : (() => {
-          const formData = new FormData(form);
-          return (formData.get('context') as string) || '';
-        })();
+        const formData = new FormData(form);
+        return (formData.get('context') as string) || '';
+      })();
 
     const imageUrl = usingProvider
       ? ''
       : (() => {
-          const formData = new FormData(form);
-          return (formData.get('imageUrl') as string) || '';
-        })();
+        const formData = new FormData(form);
+        return (formData.get('imageUrl') as string) || '';
+      })();
 
     // Reset form immediately after capturing text
     if (!usingProvider) {
@@ -918,15 +919,15 @@ export const PromptInputTextarea = forwardRef<
 
   const controlledProps = controller
     ? {
-        value: controller.textInput.value,
-        onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
-          controller.textInput.setInput(e.currentTarget.value);
-          onChange?.(e);
-        },
-      }
+      value: controller.textInput.value,
+      onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
+        controller.textInput.setInput(e.currentTarget.value);
+        onChange?.(e);
+      },
+    }
     : {
-        onChange,
-      };
+      onChange,
+    };
 
   return (
     <InputGroupTextarea
@@ -1100,11 +1101,11 @@ interface SpeechRecognition extends EventTarget {
   onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
   onend: ((this: SpeechRecognition, ev: Event) => any) | null;
   onresult:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any)
-    | null;
+  | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any)
+  | null;
   onerror:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any)
-    | null;
+  | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any)
+  | null;
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -1136,10 +1137,10 @@ interface SpeechRecognitionErrorEvent extends Event {
 declare global {
   interface Window {
     SpeechRecognition: {
-      new (): SpeechRecognition;
+      new(): SpeechRecognition;
     };
     webkitSpeechRecognition: {
-      new (): SpeechRecognition;
+      new(): SpeechRecognition;
     };
   }
 }
@@ -1240,7 +1241,7 @@ export const PromptInputSpeechButton = ({
       className={cn(
         'relative transition-all duration-200',
         isListening &&
-          'animate-pulse bg-secondary-bg-hover text-canvas-text-contrast',
+        'animate-pulse bg-secondary-bg-hover text-canvas-text-contrast',
         className,
       )}
       disabled={!recognition}

@@ -1,11 +1,15 @@
+'use client';
+
 import { SparklesIcon } from 'lucide-react';
+import { useSession } from '@/lib/auth/auth-client';
 
 type MessageAvatarProps = {
   role: 'user' | 'assistant';
-  userName?: string;
 };
 
-export function MessageAvatar({ role, userName }: MessageAvatarProps) {
+export function MessageAvatar({ role }: MessageAvatarProps) {
+  const { data: session } = useSession();
+  
   if (role === 'assistant') {
     return (
       <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-solid">
@@ -14,10 +18,13 @@ export function MessageAvatar({ role, userName }: MessageAvatarProps) {
     );
   }
 
+  const userName = session?.user?.name || session?.user?.email || 'User';
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-bg-hover">
       <span className="text-sm font-medium text-secondary-text">
-        {userName?.[0]?.toUpperCase() || 'U'}
+        {userInitial}
       </span>
     </div>
   );
