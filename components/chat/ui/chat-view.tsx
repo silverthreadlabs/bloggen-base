@@ -40,6 +40,7 @@ type Props = {
   chatTitle?: string;
   chatId?: string;
   pinned?: boolean;
+  isGuestUser?: boolean;
   onSubmit: (message: PromptInputMessage) => void;
   onSuggestionClick: (suggestion: string) => void;
   onDelete: (messageId: string) => void;
@@ -75,6 +76,7 @@ export function ChatView({
   chatTitle,
   chatId,
   pinned = false,
+  isGuestUser = false,
   fileUploads,
   onSubmit,
   onSuggestionClick,
@@ -96,6 +98,7 @@ export function ChatView({
         chatId={chatId}
         pinned={pinned}
         isNewChat={isNewChat}
+        isGuestUser={isGuestUser}
         onNewChatAction={onNewChat}
         onDeleteChat={chatTitle ? onDeleteChat : undefined}
         onUpdateTitle={chatTitle ? onUpdateTitle : undefined}

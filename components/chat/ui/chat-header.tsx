@@ -1,5 +1,7 @@
 import { MoreVertical, Pin, Share2, SquarePen, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +15,7 @@ type ChatHeaderProps = {
   chatId?: string;
   pinned?: boolean;
   isNewChat?: boolean;
+  isGuestUser?: boolean;
   onNewChatAction: () => void;
   onDeleteChat?: () => void;
   onPinChat?: (pinned: boolean) => void;
@@ -24,13 +27,14 @@ export function ChatHeader({
   chatId,
   pinned = false,
   isNewChat = true,
+  isGuestUser = false,
   onNewChatAction,
   onDeleteChat,
   onPinChat,
   onUpdateTitle,
 }: ChatHeaderProps) {
   const { isMobile } = useSidebar();
-  // Use the passed isNewChat prop instead of calculating it
+  const router = useRouter();
 
   const handleShare = () => {
     if (chatId && navigator.share) {
@@ -54,10 +58,25 @@ export function ChatHeader({
       <div className="flex items-center gap-2 flex-1">
         {isMobile && <SidebarTrigger className="h-6 w-6 p-0" />}
         <h1 className="text-lg font-bold">{title}</h1>
+        {isGuestUser && (
+          <Badge variant="secondary" className="text-xs">
+            Guest Chat
+          </Badge>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
-        {!isNewChat && (
+        {isGuestUser && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/sign-in')}
+          >
+            Login
+          </Button>
+        )}
+
+        {!isNewChat && !isGuestUser && (
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

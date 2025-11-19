@@ -6,6 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
+import { useSession } from '@/lib/auth/auth-client';
 import {
   getLengthModifierWithMarkers,
   getToneModifierWithMarkers,
@@ -60,7 +61,10 @@ export function ChatInterface({
   const messagesInitializedRef = useRef(false);
   const userContextRef = useRef(''); // Store user's actual context separately
 
-  const { data: allChats } = useChats();
+  const { data: session } = useSession();
+  const isGuestUser = !session?.user;
+
+  const { data: allChats } = useChats(!isGuestUser);
 
   // Build full context from user context and current modifiers
   const buildFullContext = useCallback((userContext: string): string => {
@@ -161,12 +165,12 @@ export function ChatInterface({
   );
 
   // Fetch current chat data to get updated title
-  const { data: currentChat } = useChatQuery(chatId);
+  const { data: currentChat } = useChatQuery(isGuestUser ? undefined : chatId);
 
   const chatOps = useChatOperations(chatId);
   const messageOps = useMessageOperations(chatId);
   const togglePin = useToggleChatPin();
-  const pinned = useChatPinStatus(chatId);
+  const pinned = useChatPinStatus(isGuestUser ? undefined : chatId);
   const updateChatTitleInCache = useUpdateChatTitleInCache();
 
   // File uploads hook - uploads immediately on file selection
@@ -191,6 +195,7 @@ export function ChatInterface({
     id: chatId,
     generateId: generateUUID,
     onFinish: async (result) => {
+      if (isGuestUser) return;
       // Save the assistant message with the correct client-generated ID
       const assistantMessage = result.message;
 
@@ -217,23 +222,29 @@ export function ChatInterface({
         }
       }
 
-      try {
-        await messageOps.saveMessage(
-          {
-            role: 'assistant',
-            parts: assistantMessage.parts,
-          },
-          assistantMessage.id, // Use the client-generated ID
-        );
+      // Skip saving for guest users
+      if (!isGuestUser) {
+        try {
+          await messageOps.saveMessage(
+            {
+              role: 'assistant',
+              parts: assistantMessage.parts,
+            },
+            assistantMessage.id, // Use the client-generated ID
+          );
 
-        // Invalidate immediately after save to refresh messages from DB
-        queryClient.invalidateQueries({
-          queryKey: chatKeys.detail(chatId),
-        });
-      } catch (error) {
-        // Error saving message
-      } finally {
-        // Remove from pending saves
+          // Invalidate immediately after save to refresh messages from DB
+          queryClient.invalidateQueries({
+            queryKey: chatKeys.detail(chatId),
+          });
+        } catch (error) {
+          // Error saving message
+        } finally {
+          // Remove from pending saves
+          pendingSavesRef.current.delete(assistantMessage.id);
+        }
+      } else {
+        // For guest users, just remove from pending saves
         pendingSavesRef.current.delete(assistantMessage.id);
       }
     },
@@ -341,14 +352,21 @@ export function ChatInterface({
 
   const handleDelete = useCallback(
     (messageId: string) => {
-      messageOps.deleteMessage(messageId);
+      if (!isGuestUser) {
+        messageOps.deleteMessage(messageId);
+      }
       setMessages(messages.filter((m) => m.id !== messageId));
     },
-    [messageOps, messages, setMessages],
+    [messageOps, messages, setMessages, isGuestUser],
   );
 
   const handleEdit = useCallback(
     async (messageId: string, newContent: string) => {
+      if (isGuestUser) {
+        toast.error('Editing messages is not available for guest users');
+        return;
+      }
+
       const messageIndex = messages.findIndex((m) => m.id === messageId);
       if (messageIndex === -1) return;
 
@@ -422,11 +440,16 @@ export function ChatInterface({
         setMessages(updatedMessages);
       }
     },
-    [messageOps, messages, setMessages, sendMessage],
+    [messageOps, messages, setMessages, sendMessage, isGuestUser],
   );
 
   const handleRegenerate = useCallback(
     async (messageId: string) => {
+      if (isGuestUser) {
+        toast.error('Regenerating messages is not available for guest users');
+        return;
+      }
+
       console.log('[handleRegenerate] Called with messageId:', messageId);
 
       // Wait for any pending saves on this message
@@ -487,10 +510,15 @@ export function ChatInterface({
         toast.error('Failed to regenerate');
       }
     },
-    [messages, setMessages, sendMessage, messageOps],
+    [messages, setMessages, sendMessage, messageOps, isGuestUser],
   );
 
   const handleDeleteChat = useCallback(async () => {
+    if (isGuestUser) {
+      toast.error('This feature is not available for guest users');
+      return;
+    }
+
     try {
       // Find the next chat to navigate to before deleting
       let nextChatId: string | undefined;
@@ -517,15 +545,25 @@ export function ChatInterface({
     } catch (error) {
       toast.error('Failed to delete chat');
     }
-  }, [chatOps, allChats, chatId]);
+  }, [chatOps, allChats, chatId, isGuestUser]);
 
   const handleTogglePin = useCallback(() => {
+    if (isGuestUser) {
+      toast.error('This feature is not available for guest users');
+      return;
+    }
+
     togglePin(chatId, !pinned);
     // toast.success(pinned ? 'Chat unpinned' : 'Chat pinned');
-  }, [chatId, pinned, togglePin]);
+  }, [chatId, pinned, togglePin, isGuestUser]);
 
   const handleUpdateTitle = useCallback(
     async (newTitle: string) => {
+      if (isGuestUser) {
+        toast.error('This feature is not available for guest users');
+        return;
+      }
+
       try {
         await chatOps.updateTitle(newTitle);
         toast.success('Title updated');
@@ -533,7 +571,7 @@ export function ChatInterface({
         toast.error('Failed to update title');
       }
     },
-    [chatOps],
+    [chatOps, isGuestUser],
   );
 
   const handleNewChat = useCallback(() => {
@@ -564,6 +602,7 @@ export function ChatInterface({
       setLength={handleLengthChange}
       pinned={pinned}
       chatTitle={currentChat?.title || initialChat?.title}
+      isGuestUser={isGuestUser}
       fileUploads={fileUploads}
       onSubmit={handleSubmit}
       onDelete={handleDelete}

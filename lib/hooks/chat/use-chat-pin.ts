@@ -38,6 +38,7 @@ export function useChatPinStatus(chatId: string | undefined): boolean {
   const { data: chats } = useQuery<Chat[]>({
     queryKey: chatKeys.list(),
     queryFn: fetchChats,
+    enabled: !!chatId,
     initialData: cachedChats,
     staleTime: 1000 * 60 * 5, // 5 minutes - same as useChats
     refetchOnMount: false,

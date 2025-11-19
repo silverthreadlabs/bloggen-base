@@ -52,7 +52,6 @@ import {
   useUpdateChatTitle,
 } from '@/lib/hooks/chat';
 import {
-  useChatPinStatus,
   useToggleChatPin,
 } from '@/lib/hooks/chat/use-chat-pin';
 import { cn } from '@/lib/utils';
@@ -64,8 +63,9 @@ type Props = {
 export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: chats, isLoading } = useChats();
   const { data: session } = useSession();
+  const isGuestUser = !session?.user;
+  const { data: chats, isLoading } = useChats(!isGuestUser);
   const createChatMutation = useCreateChat();
   const deleteChatMutation = useDeleteChat();
   const updateTitleMutation = useUpdateChatTitle();
@@ -76,7 +76,7 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  
+
   // Extract current chat ID from pathname, fallback to prop
   const currentChatId = useMemo(() => {
     const match = pathname?.match(/\/chat\/([^/?]+)/);
@@ -117,7 +117,7 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
     return { pinnedChats: pinned, groupedChats: grouped };
   }, [chats, searchQuery]);
 
-  const handleNewChat = useCallback(() => {    
+  const handleNewChat = useCallback(() => {
     // Navigate to /chat without creating a chat immediately
     // Chat will be created when first message is sent
     router.push('/chat');
@@ -147,7 +147,7 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
       deleteChatMutation.mutate(chatId, {
         onSuccess: () => {
           toast.success('Chat deleted');
-          
+
           // Only navigate if we're deleting the currently active chat
           if (currentChatId === chatId) {
             window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
@@ -237,8 +237,9 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
             router.replace(`/chat/${chat.id}`);
           }}
           className={cn(
-            "group/menu-item",
-            isActive && "bg-canvas-bg-active font-medium border-l-2 border-primary-solid"
+            'group/menu-item',
+            isActive &&
+              'bg-canvas-bg-active font-medium border-l-2 border-primary-solid',
           )}
         >
           {isEditing ? (
@@ -397,57 +398,78 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
 
           {/* History Section */}
           <SidebarGroup>
-            <SidebarGroupLabel
-              onClick={() => setHistoryExpanded(!historyExpanded)}
-              className="cursor-pointer flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                <span>History</span>
-              </div>
-              {historyExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </SidebarGroupLabel>
-            {historyExpanded && (
-              <SidebarGroupContent>
-                {isLoading ? (
-                  <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                    Loading...
+            {isGuestUser ? (
+              <>
+                <SidebarGroupLabel className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  <span>History</span>
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Login to see history</p>
+                    <p className="text-xs">Your chats will be saved when you log in</p>
                   </div>
-                ) : (
-                  <>
-                    {Object.entries(groupedChats).length > 0
-                      ? Object.entries(groupedChats).map(
-                          ([month, monthChats]) => (
-                            <div key={month} className="mb-4">
-                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                                {month}
-                              </div>
-                              <SidebarMenu>
-                                {monthChats.map(renderChatItem)}
-                              </SidebarMenu>
-                            </div>
-                          ),
-                        )
-                      : !searchQuery && (
-                          <div className="px-2 py-8 text-center text-sm text-muted-foreground">
-                            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>No chats yet</p>
-                            <p className="text-xs">Create one to get started</p>
-                          </div>
-                        )}
-
-                    {searchQuery && Object.keys(groupedChats).length === 0 && (
-                      <div className="px-2 py-8 text-center text-sm text-muted-foreground">
-                        No chats found
+                </SidebarGroupContent>
+              </>
+            ) : (
+              <>
+                <SidebarGroupLabel
+                  onClick={() => setHistoryExpanded(!historyExpanded)}
+                  className="cursor-pointer flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    <span>History</span>
+                  </div>
+                  {historyExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </SidebarGroupLabel>
+                {historyExpanded && (
+                  <SidebarGroupContent>
+                    {isLoading ? (
+                      <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                        Loading...
                       </div>
+                    ) : (
+                      <>
+                        {Object.entries(groupedChats).length > 0
+                          ? Object.entries(groupedChats).map(
+                              ([month, monthChats]) => (
+                                <div key={month} className="mb-4">
+                                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                    {month}
+                                  </div>
+                                  <SidebarMenu>
+                                    {monthChats.map(renderChatItem)}
+                                  </SidebarMenu>
+                                </div>
+                              ),
+                            )
+                          : !searchQuery && (
+                              <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                                <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p>No chats yet</p>
+                                <p className="text-xs">
+                                  Create one to get started
+                                </p>
+                              </div>
+                            )}
+
+                        {searchQuery &&
+                          Object.keys(groupedChats).length === 0 && (
+                            <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                              No chats found
+                            </div>
+                          )}
+                      </>
                     )}
-                  </>
+                  </SidebarGroupContent>
                 )}
-              </SidebarGroupContent>
+              </>
             )}
           </SidebarGroup>
         </div>
@@ -472,10 +494,10 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                 <Avatar className="h-8 w-8">
                   <AvatarImage
                     src={session?.user?.image || undefined}
-                    alt={session?.user?.name || 'User'}
+                    alt={session?.user?.name || (isGuestUser ? 'Guest' : 'User')}
                   />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    {session?.user?.name?.charAt(0).toUpperCase() || (isGuestUser ? 'G' : 'U')}
                   </AvatarFallback>
                 </Avatar>
                 <span
@@ -483,38 +505,47 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                     'text-sm whitespace-nowrap group-data-[collapsible=icon]:hidden',
                   )}
                 >
-                  {session?.user?.name || 'User'}
+                  {session?.user?.name || (isGuestUser ? 'Guest' : 'User')}
                 </span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => router.push('/settings')}>
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/help')}>
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Help
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/upgrade')}>
-                <Crown className="h-4 w-4 mr-2" />
-                Upgrade
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={async () => {
-                  await signOut({
-                    fetchOptions: {
-                      onSuccess: () => {
-                        router.push('/');
-                      },
-                    },
-                  });
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
+              {isGuestUser ? (
+                <DropdownMenuItem onClick={() => router.push('/sign-in')}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Login
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/help')}>
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Help
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/upgrade')}>
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={async () => {
+                      await signOut({
+                        fetchOptions: {
+                          onSuccess: () => {
+                            router.push('/');
+                          },
+                        },
+                      });
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <SidebarMenuButton
