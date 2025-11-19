@@ -18,6 +18,8 @@ export interface RateLimitConfig {
   useBrowserFingerprint?: boolean;
   /** Whether to apply special handling for shared networks (default: true) */
   handleSharedNetworks?: boolean;
+  /** Whether to assign a persistent guest cookie for anonymous visitors (default: true) */
+  useGuestCookie?: boolean;
 }
 
 /**

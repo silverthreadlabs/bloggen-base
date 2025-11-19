@@ -11,6 +11,7 @@ export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
     name: 'Anonymous',
     useBrowserFingerprint: true,
     handleSharedNetworks: true,
+    useGuestCookie: true,
   },
   registered: {
     limit: 9000,
@@ -18,6 +19,7 @@ export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
     name: 'Registered',
     useBrowserFingerprint: false, // Not needed for registered users
     handleSharedNetworks: false,
+    useGuestCookie: false,
   },
   paid: {
     limit: 100,
@@ -25,6 +27,7 @@ export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
     name: 'Paid',
     useBrowserFingerprint: false, // Not needed for paid users
     handleSharedNetworks: false,
+    useGuestCookie: false,
   },
 };
 

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { auth } from '@/lib/auth/auth';
 import type { BetterAuthSession } from '@/lib/auth/auth-types';
 import type { RateLimitConfig, RateLimitRole } from './types';
@@ -168,12 +168,30 @@ export async function getRateLimitIdentifier(
   const config = getRateLimitConfig(role);
   
   if (role === 'anonymous') {
-    // Check if browser fingerprinting is enabled for this role
-    if (config.useBrowserFingerprint) {
-      return await getEnhancedAnonymousIdentifier();
+    // (1) Persistent guest cookie ID if enabled
+    let guestId: string | null = null;
+    if (config.useGuestCookie) {
+      guestId = await getOrCreateGuestId();
     }
-    // Fallback to IP-only for anonymous users if fingerprinting is disabled
-    return await getClientIP();
+
+    // (2) Build base components
+    const ip = await getClientIP();
+    const fingerprint = config.useBrowserFingerprint
+      ? await generateBrowserFingerprint()
+      : 'no-fp';
+
+    // (3) Shared network handling still applied inside enhanced identifier when fingerprinting enabled
+    if (config.useBrowserFingerprint) {
+      const enhanced = await getEnhancedAnonymousIdentifier();
+      // If we have a guestId, prepend it for per-device uniqueness
+      return guestId ? `g:${guestId}:${enhanced}` : enhanced;
+    }
+
+    // (4) Fallback combinations when fingerprinting disabled
+    if (guestId) {
+      return `g:${guestId}:${ip}`;
+    }
+    return ip;
   }
 
   // For registered/paid users, use userId
@@ -240,4 +258,34 @@ export async function getRateLimitDebugInfo(): Promise<RateLimitDebugInfo> {
     isSharedNetwork,
     config,
   };
+}
+
+/**
+ * Get or create a persistent guest ID cookie for anonymous visitors.
+ * This allows distinguishing devices even when IP addresses are shared (NAT, proxies).
+ */
+async function getOrCreateGuestId(): Promise<string> {
+  const store = await cookies();
+  const existing = store.get('guest_id')?.value;
+  if (existing) return existing;
+
+  const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2, 10);
+
+  // 30 days persistence; adjust as needed
+  // Note: In edge/runtime where cookies may be read-only, this might no-op.
+  try {
+    const secure = process.env.NODE_ENV === 'production';
+    store.set?.('guest_id', id, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+    });
+  } catch {
+    // swallow errors (e.g., read-only cookies in certain contexts)
+  }
+  return id;
 }
