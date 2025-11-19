@@ -70,7 +70,7 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const deleteChatMutation = useDeleteChat();
   const updateTitleMutation = useUpdateChatTitle();
   const togglePin = useToggleChatPin();
-  const { toggleSidebar, state } = useSidebar();
+  const { toggleSidebar, state, isMobile, setOpenMobile } = useSidebar();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [historyExpanded, setHistoryExpanded] = useState(true);
@@ -229,7 +229,13 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
       <SidebarMenuItem key={chat.id}>
         <SidebarMenuButton
           isActive={isActive}
-          onClick={() => router.replace(`/chat/${chat.id}`)}
+          onClick={() => {
+            // Close sidebar on mobile when clicking a chat
+            if (isMobile) {
+              setOpenMobile(false);
+            }
+            router.replace(`/chat/${chat.id}`);
+          }}
           className={cn(
             "group/menu-item",
             isActive && "bg-canvas-bg-active font-medium border-l-2 border-primary-solid"

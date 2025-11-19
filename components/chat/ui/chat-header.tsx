@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 
 type ChatHeaderProps = {
   title?: string;
@@ -26,6 +27,7 @@ export function ChatHeader({
   onPinChat,
   onUpdateTitle,
 }: ChatHeaderProps) {
+  const { isMobile } = useSidebar();
   // If chatId exists, it's not a new chat (regardless of title)
   // Title might be "New Chat" temporarily even after chat is created
   const isNewChat = !chatId;
@@ -50,6 +52,9 @@ export function ChatHeader({
   return (
     <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
+        {isMobile && (
+          <SidebarTrigger className="h-6 w-6 p-0" />
+        )}
         <h1 className="text-lg font-bold">{title}</h1>
       </div>
 
