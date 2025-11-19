@@ -48,7 +48,7 @@ export function ChatHeader({
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-sidebar-border bg-sidebar px-4 py-3 shrink-0 w-full">
+    <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
         <h1 className="text-lg font-bold">{title}</h1>
       </div>
