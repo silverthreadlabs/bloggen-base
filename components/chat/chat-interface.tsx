@@ -6,26 +6,31 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
-import { useFileUploads } from '@/lib/hooks/use-file-uploads';
-import { 
-  getToneModifierWithMarkers, 
+import {
   getLengthModifierWithMarkers,
-  TONE_MARKER_START,
-  TONE_MARKER_END,
-  LENGTH_MARKER_START,
+  getToneModifierWithMarkers,
   LENGTH_MARKER_END,
+  LENGTH_MARKER_START,
+  TONE_MARKER_END,
+  TONE_MARKER_START,
 } from '@/lib/config/message-modifiers';
-import type { ChatWithMessages } from '@/lib/types/chat';
-import { useChats, useUpdateChatTitleInCache } from '@/lib/hooks/chat';
+import {
+  useChatOperations,
+  useChat as useChatQuery,
+  useChats,
+  useMessageOperations,
+  useUpdateChatTitleInCache,
+} from '@/lib/hooks/chat';
 import { chatKeys } from '@/lib/hooks/chat/query-keys';
-import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import {
   useChatPinStatus,
   useToggleChatPin,
 } from '@/lib/hooks/chat/use-chat-pin';
+import { useFileUploads } from '@/lib/hooks/use-file-uploads';
+import { useMessageModifiers } from '@/lib/hooks/use-url-state';
+import type { ChatWithMessages } from '@/lib/types/chat';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
-import { useChatOperations, useMessageOperations, useChat as useChatQuery } from '@/lib/hooks/chat';
 
 type Props = {
   chatId: string;
@@ -56,85 +61,105 @@ export function ChatInterface({
   const userContextRef = useRef(''); // Store user's actual context separately
 
   const { data: allChats } = useChats();
-  
+
   // Build full context from user context and current modifiers
   const buildFullContext = useCallback((userContext: string): string => {
     let fullContext = userContext;
-    
+
     // Add tone instructions with markers
     const toneModifier = getToneModifierWithMarkers(modifiersRef.current.tone);
     if (toneModifier) {
-      fullContext = fullContext ? `${fullContext}${toneModifier}` : toneModifier.trim();
+      fullContext = fullContext
+        ? `${fullContext}${toneModifier}`
+        : toneModifier.trim();
     }
-    
+
     // Add length instructions with markers
-    const lengthModifier = getLengthModifierWithMarkers(modifiersRef.current.length);
+    const lengthModifier = getLengthModifierWithMarkers(
+      modifiersRef.current.length,
+    );
     if (lengthModifier) {
-      fullContext = fullContext ? `${fullContext}${lengthModifier}` : lengthModifier.trim();
+      fullContext = fullContext
+        ? `${fullContext}${lengthModifier}`
+        : lengthModifier.trim();
     }
-    
+
     return fullContext;
   }, []);
-  
+
   // Extract user context by removing modifier sections using markers
   const extractUserContext = useCallback((fullContext: string): string => {
     let extracted = fullContext;
-    
+
     // Remove tone modifier section using indexOf (more reliable than regex)
     let toneStartIdx = extracted.indexOf(TONE_MARKER_START);
     while (toneStartIdx !== -1) {
       const toneEndIdx = extracted.indexOf(TONE_MARKER_END, toneStartIdx);
       if (toneEndIdx !== -1) {
         // Remove everything from start marker to end marker (inclusive)
-        extracted = extracted.substring(0, toneStartIdx) + 
-                    extracted.substring(toneEndIdx + TONE_MARKER_END.length);
+        extracted =
+          extracted.substring(0, toneStartIdx) +
+          extracted.substring(toneEndIdx + TONE_MARKER_END.length);
         toneStartIdx = extracted.indexOf(TONE_MARKER_START);
       } else {
         break;
       }
     }
-    
+
     // Remove length modifier section using indexOf
     let lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
     while (lengthStartIdx !== -1) {
       const lengthEndIdx = extracted.indexOf(LENGTH_MARKER_END, lengthStartIdx);
       if (lengthEndIdx !== -1) {
         // Remove everything from start marker to end marker (inclusive)
-        extracted = extracted.substring(0, lengthStartIdx) + 
-                    extracted.substring(lengthEndIdx + LENGTH_MARKER_END.length);
+        extracted =
+          extracted.substring(0, lengthStartIdx) +
+          extracted.substring(lengthEndIdx + LENGTH_MARKER_END.length);
         lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
       } else {
         break;
       }
     }
-    
+
     return extracted.trim();
   }, []);
-  
+
   // Wrapper for setContext that updates userContextRef
-  const handleContextChange = useCallback((newContext: string) => {
-    const userPart = extractUserContext(newContext);
-    userContextRef.current = userPart;
-    setContext(newContext);
-  }, [extractUserContext]);
-  
+  const handleContextChange = useCallback(
+    (newContext: string) => {
+      const userPart = extractUserContext(newContext);
+      userContextRef.current = userPart;
+      setContext(newContext);
+    },
+    [extractUserContext],
+  );
+
   // Wrapper for setModifiers that rebuilds context
-  const handleModifiersChange = useCallback((newModifiers: typeof modifiers) => {
-    setModifiers(newModifiers);
-    modifiersRef.current = newModifiers;
-    const fullContext = buildFullContext(userContextRef.current);
-    setContext(fullContext);
-  }, [setModifiers, buildFullContext]);
-  
+  const handleModifiersChange = useCallback(
+    (newModifiers: typeof modifiers) => {
+      setModifiers(newModifiers);
+      modifiersRef.current = newModifiers;
+      const fullContext = buildFullContext(userContextRef.current);
+      setContext(fullContext);
+    },
+    [setModifiers, buildFullContext],
+  );
+
   // Individual setters for tone and length
-  const handleToneChange = useCallback((tone: typeof modifiers.tone) => {
-    handleModifiersChange({ tone, length: modifiersRef.current.length });
-  }, [handleModifiersChange]);
-  
-  const handleLengthChange = useCallback((length: typeof modifiers.length) => {
-    handleModifiersChange({ tone: modifiersRef.current.tone, length });
-  }, [handleModifiersChange]);
-  
+  const handleToneChange = useCallback(
+    (tone: typeof modifiers.tone) => {
+      handleModifiersChange({ tone, length: modifiersRef.current.length });
+    },
+    [handleModifiersChange],
+  );
+
+  const handleLengthChange = useCallback(
+    (length: typeof modifiers.length) => {
+      handleModifiersChange({ tone: modifiersRef.current.tone, length });
+    },
+    [handleModifiersChange],
+  );
+
   // Fetch current chat data to get updated title
   const { data: currentChat } = useChatQuery(chatId);
 
@@ -168,16 +193,18 @@ export function ChatInterface({
     onFinish: async (result) => {
       // Save the assistant message with the correct client-generated ID
       const assistantMessage = result.message;
-      
+
       // Track this save as pending
       pendingSavesRef.current.add(assistantMessage.id);
-      
+
       // Get metadata for title updates
-      const metadata = result.message.metadata as {
-        chatId?: string;
-        chatTitle?: string;
-        isNewChat?: boolean;
-      } | undefined;
+      const metadata = result.message.metadata as
+        | {
+            chatId?: string;
+            chatTitle?: string;
+            isNewChat?: boolean;
+          }
+        | undefined;
 
       // Handle URL update for first message
       if (isFirstMessageRef.current) {
@@ -198,7 +225,7 @@ export function ChatInterface({
           },
           assistantMessage.id, // Use the client-generated ID
         );
-        
+
         // Invalidate immediately after save to refresh messages from DB
         queryClient.invalidateQueries({
           queryKey: chatKeys.detail(chatId),
@@ -214,7 +241,11 @@ export function ChatInterface({
 
   // Initialize messages from server data on mount (for existing chats)
   // Use queueMicrotask to defer setState and avoid the "setState during render" warning
-  if (!messagesInitializedRef.current && messages.length === 0 && (initialChat?.messages?.length || currentChat?.messages?.length)) {
+  if (
+    !messagesInitializedRef.current &&
+    messages.length === 0 &&
+    (initialChat?.messages?.length || currentChat?.messages?.length)
+  ) {
     messagesInitializedRef.current = true;
     const chatData = currentChat || initialChat;
     if (chatData?.messages) {
@@ -245,11 +276,11 @@ export function ChatInterface({
         .trim();
 
       const messageParts: any[] = [{ type: 'text', text: message.text }];
-      
+
       // Get uploaded file IDs and details from the upload hook
       const fileIds = fileUploads.getUploadedFileIds();
       const uploadedFiles = fileUploads.getUploadedFiles();
-      
+
       // Add file attachments to message parts for optimistic UI
       for (const file of uploadedFiles) {
         if (file.type.startsWith('image/')) {
@@ -265,7 +296,7 @@ export function ChatInterface({
           });
         }
       }
-      
+
       // Clear input immediately for better UX
       setText('');
       setContext('');
@@ -367,7 +398,9 @@ export function ChatInterface({
           setMessages(messagesUpToEdit);
 
           // Extract context from the original message metadata (preserve it after edit)
-          const messageContext = (messages[messageIndex].metadata as { context?: string } | undefined)?.context;
+          const messageContext = (
+            messages[messageIndex].metadata as { context?: string } | undefined
+          )?.context;
 
           // Regenerate using the edited user message ID
           aiRegenerate({
@@ -395,23 +428,23 @@ export function ChatInterface({
   const handleRegenerate = useCallback(
     async (messageId: string) => {
       console.log('[handleRegenerate] Called with messageId:', messageId);
-      
+
       // Wait for any pending saves on this message
       if (pendingSavesRef.current.has(messageId)) {
         const startTime = Date.now();
         const maxWait = 5000; // 5 seconds max
-        
+
         while (pendingSavesRef.current.has(messageId)) {
           if (Date.now() - startTime > maxWait) {
             toast.error('Please wait for the message to finish saving');
             return;
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
-      
+
       const messageIndex = messages.findIndex((m) => m.id === messageId);
-      
+
       if (messageIndex === -1 || messages[messageIndex].role !== 'assistant') {
         return;
       }
@@ -436,7 +469,9 @@ export function ChatInterface({
         setMessages(messages.slice(0, messageIndex));
 
         // Extract context from the user message metadata
-        const userContext = (userMessage.metadata as { context?: string } | undefined)?.context;
+        const userContext = (
+          userMessage.metadata as { context?: string } | undefined
+        )?.context;
 
         // Regenerate using the user message ID (the message before the assistant message)
         aiRegenerate({

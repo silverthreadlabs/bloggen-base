@@ -87,7 +87,7 @@ export function ChatView({
   onPinChat,
   onStop,
 }: Props) {
-  const isNewChat = messages.length === 0 && !chatId;
+  const isNewChat = messages.length === 0;
 
   return (
     <div className="relative flex size-full pb-4 w-full items-center flex-col overflow-hidden">
@@ -95,13 +95,14 @@ export function ChatView({
         title={chatTitle}
         chatId={chatId}
         pinned={pinned}
+        isNewChat={isNewChat}
         onNewChatAction={onNewChat}
         onDeleteChat={chatTitle ? onDeleteChat : undefined}
         onUpdateTitle={chatTitle ? onUpdateTitle : undefined}
         onPinChat={onPinChat}
       />
 
-      <Conversation className="flex-1 overflow-y-auto max-w-4xl">
+      <Conversation className="flex-1 overflow-y-auto max-w-4xl w-full">
         <ConversationContent>
           {isLoadingChat ? (
             <div className="flex h-full items-center justify-center">

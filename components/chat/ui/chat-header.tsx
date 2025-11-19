@@ -12,6 +12,7 @@ type ChatHeaderProps = {
   title?: string;
   chatId?: string;
   pinned?: boolean;
+  isNewChat?: boolean;
   onNewChatAction: () => void;
   onDeleteChat?: () => void;
   onPinChat?: (pinned: boolean) => void;
@@ -22,15 +23,14 @@ export function ChatHeader({
   title = 'New Chat',
   chatId,
   pinned = false,
+  isNewChat = true,
   onNewChatAction,
   onDeleteChat,
   onPinChat,
   onUpdateTitle,
 }: ChatHeaderProps) {
   const { isMobile } = useSidebar();
-  // If chatId exists, it's not a new chat (regardless of title)
-  // Title might be "New Chat" temporarily even after chat is created
-  const isNewChat = !chatId;
+  // Use the passed isNewChat prop instead of calculating it
 
   const handleShare = () => {
     if (chatId && navigator.share) {
@@ -52,9 +52,7 @@ export function ChatHeader({
   return (
     <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
-        {isMobile && (
-          <SidebarTrigger className="h-6 w-6 p-0" />
-        )}
+        {isMobile && <SidebarTrigger className="h-6 w-6 p-0" />}
         <h1 className="text-lg font-bold">{title}</h1>
       </div>
 
@@ -63,7 +61,13 @@ export function ChatHeader({
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" iconOnly leadingIcon={<MoreVertical className="h-4 w-4" />} className="h-8 w-8 p-0" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  leadingIcon={<MoreVertical className="h-4 w-4" />}
+                  className="h-8 w-8 p-0"
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 {onPinChat && (
@@ -114,7 +118,6 @@ export function ChatHeader({
             iconOnly
             leadingIcon={<SquarePen className="h-4 w-4" />}
           />
-
         )}
       </div>
     </div>
