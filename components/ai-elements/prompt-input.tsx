@@ -471,6 +471,7 @@ export const PromptInput = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const lastErrorTimeRef = useRef(0);
 
   // Find nearest form to scope drag & drop
   useEffect(() => {
@@ -526,10 +527,13 @@ export const PromptInput = ({
       const rejected = incoming.filter((f) => !matchesAccept(f));
       if (rejected.length > 0) {
         const rejectedNames = rejected.map(f => f.name).join(', ');
-        onError?.({
-          code: 'accept',
-          message: `File type not supported: ${rejectedNames}`,
-        });
+        if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+          lastErrorTimeRef.current = Date.now();
+          onError({
+            code: 'accept',
+            message: `File type not supported: ${rejectedNames}`,
+          });
+        }
       }
 
       if (incoming.length && accepted.length === 0) {
@@ -544,10 +548,13 @@ export const PromptInput = ({
       const tooLarge = accepted.filter((f) => !withinSize(f));
       if (tooLarge.length > 0) {
         const largeNames = tooLarge.map(f => f.name).join(', ');
-        onError?.({
-          code: 'max_file_size',
-          message: `File too large: ${largeNames}`,
-        });
+        if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+          lastErrorTimeRef.current = Date.now();
+          onError({
+            code: 'max_file_size',
+            message: `File too large: ${largeNames}`,
+          });
+        }
       }
 
       if (accepted.length > 0 && sized.length === 0) {
@@ -579,10 +586,13 @@ export const PromptInput = ({
         const capped =
           typeof capacity === 'number' ? uniqueFiles.slice(0, capacity) : uniqueFiles;
         if (typeof capacity === 'number' && uniqueFiles.length > capacity) {
-          onError?.({
-            code: 'max_files',
-            message: 'Too many files. Some were not added.',
-          });
+          if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+            lastErrorTimeRef.current = Date.now();
+            onError({
+              code: 'max_files',
+              message: `Maximum ${maxFiles} files allowed.`,
+            });
+          }
         }
 
         newItems = [];
