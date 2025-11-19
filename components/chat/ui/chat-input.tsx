@@ -27,6 +27,8 @@ import {
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
 import { LengthSelector, ToneSelector } from '../selectors';
 
+const MAX_FILES = 2;
+
 type Props = {
   text: string;
   context: string;
@@ -97,7 +99,8 @@ export function ChatInput({
       globalDrop
       multiple
       accept={getFileInputAccept()}
-      maxFileSize={20 * 1024 * 1024} // 20MB
+      maxFiles={MAX_FILES}
+      maxFileSize={5 * 1024 * 1024} // 5MB
       onError={(error) => {
         toast.error(error.message);
       }}
