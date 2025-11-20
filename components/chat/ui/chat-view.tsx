@@ -15,6 +15,7 @@ import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
 import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Props = {
   messages: UIMessage[];
@@ -99,6 +100,8 @@ export function ChatView({
         pinned={pinned}
         isNewChat={isNewChat}
         isGuestUser={isGuestUser}
+        isSessionPending={isLoading}
+        isLoadingChat={isLoadingChat}
         onNewChatAction={onNewChat}
         onDeleteChat={chatTitle ? onDeleteChat : undefined}
         onUpdateTitle={chatTitle ? onUpdateTitle : undefined}
@@ -108,12 +111,24 @@ export function ChatView({
       <Conversation className="flex-1 overflow-y-auto max-w-4xl w-full">
         <ConversationContent>
           {isLoadingChat ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="mx-auto w-full max-w-2xl px-4">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Loader />
-                  <span className="text-sm">Loading messages...</span>
-                </div>
+            <div className="mx-auto w-full  px-4 py-8">
+              <div className="flex flex-col gap-6">
+                {[...Array(4)].map((_, i) => {
+                  const isUser = i % 2 === 0;
+                  return (
+                    <div key={i} className={isUser ? 'flex flex-col items-end' : 'flex flex-col items-start'}>
+                      <div className="flex gap-3 items-start w-full max-w-lg">
+                        <div className={isUser ? 'flex-1 flex flex-col gap-2 items-end' : 'flex-1 flex flex-col gap-2'}>
+                          <Skeleton className="h-8 w-1/2" />
+                        </div>
+                      </div>
+                      <div className={isUser ? 'flex gap-2 mt-2 justify-end' : 'flex gap-2 mt-2 justify-start'}>
+                        <Skeleton className="h-6 w-10 rounded-md" />
+                        <Skeleton className="h-6 w-10 rounded-md" />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : messages.length === 0 ? (

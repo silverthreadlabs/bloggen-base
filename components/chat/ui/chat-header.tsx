@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ChatHeaderProps = {
   title?: string;
@@ -16,6 +17,8 @@ type ChatHeaderProps = {
   pinned?: boolean;
   isNewChat?: boolean;
   isGuestUser?: boolean;
+  isSessionPending?: boolean;
+  isLoadingChat?: boolean;
   onNewChatAction: () => void;
   onDeleteChat?: () => void;
   onPinChat?: (pinned: boolean) => void;
@@ -28,6 +31,8 @@ export function ChatHeader({
   pinned = false,
   isNewChat = true,
   isGuestUser = false,
+  isSessionPending = false,
+  isLoadingChat = false,
   onNewChatAction,
   onDeleteChat,
   onPinChat,
@@ -53,27 +58,40 @@ export function ChatHeader({
     }
   };
 
+
   return (
     <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
         {isMobile && <SidebarTrigger className="h-6 w-6 p-0" />}
-        <h1 className="text-lg font-bold">{title}</h1>
-        {isGuestUser && (
-          <Badge variant="secondary" className="text-xs">
-            Guest Chat
-          </Badge>
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-6 w-32 rounded" />
+        ) : (
+          <h1 className="text-lg font-bold">{title}</h1>
+        )}
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-5 w-16 rounded" />
+        ) : (
+          isGuestUser && (
+            <Badge variant="secondary" className="text-xs">
+              Guest Chat
+            </Badge>
+          )
         )}
       </div>
 
       <div className="flex items-center gap-2">
-        {isGuestUser && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/sign-in')}
-          >
-            Login
-          </Button>
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-8 w-20 rounded" />
+        ) : (
+          isGuestUser && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/sign-in')}
+            >
+              Login
+            </Button>
+          )
         )}
 
         {!isNewChat && !isGuestUser && (

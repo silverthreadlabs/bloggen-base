@@ -60,6 +60,7 @@ import {
   useToggleChatPin,
 } from '@/lib/hooks/chat/use-chat-pin';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Props = {
   currentChatId?: string;
@@ -68,7 +69,7 @@ type Props = {
 export function ChatSidebar({ currentChatId: initialChatId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, isPending: isSessionPending } = useSession();
   const isGuestUser = !session?.user;
   const { data: chats, isLoading } = useChats(!isGuestUser);
   const createChatMutation = useCreateChat();
@@ -113,9 +114,8 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
         totalChats: 0,
       };
 
-
     const searchTerm = deferredSearchQuery.toLowerCase().trim();
-    
+
     const filtered = chats.filter((chat) => {
       if (!searchTerm) return true;
       // Search in both title and content if available
@@ -492,14 +492,40 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                 </div>
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>{pinnedChats.map(renderChatItem)}</SidebarMenu>
+                {isLoading ? (
+                  <SidebarMenu>
+                    {[...Array(2)].map((_, i) => (
+                      <SidebarMenuItem key={i}>
+                        <Skeleton className="h-8 w-full mb-2" />
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                ) : (
+                  <SidebarMenu>{pinnedChats.map(renderChatItem)}</SidebarMenu>
+                )}
               </SidebarGroupContent>
             </SidebarGroup>
           )}
 
           {/* History Section */}
           <SidebarGroup className="flex-1 min-h-0 flex flex-col">
-            {isGuestUser ? (
+            {isSessionPending ? (
+              <>
+                <SidebarGroupLabel className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  <span>History</span>
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {[...Array(4)].map((_, i) => (
+                      <SidebarMenuItem key={i}>
+                        <Skeleton className="h-8 w-full mb-2" />
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </>
+            ) : isGuestUser ? (
               <>
                 <SidebarGroupLabel className="flex items-center gap-2">
                   <History className="h-4 w-4" />
@@ -549,65 +575,40 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                     )}
                   >
                     {isLoading ? (
-                      <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                        Loading...
+                      <SidebarMenu>
+                        {[...Array(4)].map((_, i) => (
+                          <SidebarMenuItem key={i}>
+                            <Skeleton className="h-8 w-full mb-2" />
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    ) : Object.entries(groupedChats).length === 0 ? (
+                      <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                        <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No chats yet</p>
+                        <p className="text-xs">
+                          Create one to get started
+                        </p>
                       </div>
                     ) : (
-                      <div className="min-h-full flex flex-col">
-                        {Object.entries(groupedChats).length > 0 ? (
-                          <div className="flex-1">
-                            {Object.entries(groupedChats).map(
-                              ([month, monthChats]) => (
-                                <div key={month} className="mb-4">
-                                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
-                                    <span>{month}</span>
-                                    {searchQuery && (
-                                      <span className="text-xs">
-                                        {monthChats.length}{' '}
-                                        {monthChats.length === 1
-                                          ? 'chat'
-                                          : 'chats'}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <SidebarMenu>
-                                    {monthChats.map(renderChatItem)}
-                                  </SidebarMenu>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        ) : !searchQuery && !isLoading ? (
-                          <div className="flex-1 flex items-center justify-center">
-                            <div className="px-2 py-8 text-center text-sm text-muted-foreground">
-                              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>No chats yet</p>
-                              <p className="text-xs">
-                                Create one to get started
-                              </p>
+                      Object.entries(groupedChats).map(
+                        ([month, monthChats]) => (
+                          <div key={month} className="mb-4">
+                            <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                              <span>{month}</span>
+                              {searchQuery && (
+                                <span className="text-xs">
+                                  {monthChats.length}{' '}
+                                  {monthChats.length === 1 ? 'chat' : 'chats'}
+                                </span>
+                              )}
                             </div>
+                            <SidebarMenu>
+                              {monthChats.map(renderChatItem)}
+                            </SidebarMenu>
                           </div>
-                        ) : null}
-
-                        {searchQuery && !hasResults && !isLoading && (
-                          <div className="flex-1 flex items-center justify-center">
-                            <div className="px-2 py-8 text-center text-sm text-muted-foreground">
-                              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>No chats found</p>
-                              {/* <p className="text-xs">
-                            Try a different search term
-                          </p>
-                          <button
-                            onClick={clearSearch}
-                            className="mt-2 text-xs text-primary hover:underline"
-                            type="button"
-                          >
-                            Clear search
-                          </button> */}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        ),
+                      )
                     )}
                   </div>
                 </SidebarGroupContent>
@@ -634,20 +635,30 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                 )}
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={session?.user?.image || undefined}
-                    alt={session?.user?.name || 'User'}
-                  />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
+                  {isSessionPending ? (
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  ) : (
+                    <>
+                      <AvatarImage
+                        src={session?.user?.image || undefined}
+                        alt={session?.user?.name || 'User'}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                        {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </>
+                  )}
                 </Avatar>
                 <span
                   className={cn(
                     'text-sm whitespace-nowrap group-data-[collapsible=icon]:hidden',
                   )}
                 >
-                  {session?.user?.name || 'User'}
+                  {isSessionPending ? (
+                    <Skeleton className="h-4 w-20" />
+                  ) : (
+                    session?.user?.name || 'User'
+                  )}
                 </span>
               </button>
             </DropdownMenuTrigger>
