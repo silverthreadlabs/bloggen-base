@@ -184,7 +184,7 @@ export function HistorySection({
       
       {/* Vertical line below history icon */}
       {historyExpanded && (
-        <div className="absolute left-2 top-8 bottom-0 w-px bg-canvas-line z-0" />
+        <div className="absolute left-6 top-9 bottom-0 w-px bg-canvas-line z-0" />
       )}
       
       <SidebarGroupContent

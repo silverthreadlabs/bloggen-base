@@ -6,7 +6,7 @@ import type { RateLimitConfig, RateLimitRole } from './types';
  */
 export const RATE_LIMIT_CONFIG: Record<RateLimitRole, RateLimitConfig> = {
   anonymous: {
-    limit: 30,
+    limit: 5,
     window: 86400, // 24 hours in seconds (1 day)
     name: 'Anonymous',
   },

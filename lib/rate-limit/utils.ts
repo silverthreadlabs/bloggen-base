@@ -9,29 +9,111 @@ import type { RateLimitRole } from './types';
  * Extract IP address from request headers
  * Works with Vercel Edge, Cloudflare, and standard proxies
  */
-export async function getClientIP(): Promise<string> {
-  const headersList = await headers();
+export async function getClientIP(req?: Request | any): Promise<string> {
+  let ip = 'unknown';
 
-  // Check common proxy headers (in order of preference)
-  const forwardedFor = headersList.get('x-forwarded-for');
-  if (forwardedFor) {
-    // X-Forwarded-For can contain multiple IPs, take the first one
-    return forwardedFor.split(',')[0]?.trim() || 'unknown';
+  // 1. Try to get IP directly from the request (NextRequest)
+  if (req?.ip) {
+    ip = req.ip;
   }
 
-  const realIP = headersList.get('x-real-ip');
-  if (realIP) {
-    return realIP.trim();
+  // 2. Try to get IP from request headers (if provided)
+  if (!ip || ip === 'unknown') {
+    if (req?.headers?.get) {
+      const forwardedFor = req.headers.get('x-forwarded-for');
+      if (forwardedFor) {
+        ip = forwardedFor.split(',')[0]?.trim() || 'unknown';
+      }
+
+      if (!ip || ip === 'unknown') {
+        const realIP = req.headers.get('x-real-ip');
+        if (realIP) {
+          ip = realIP.trim();
+        }
+      }
+
+      if (!ip || ip === 'unknown') {
+        const cfConnectingIP = req.headers.get('cf-connecting-ip');
+        if (cfConnectingIP) {
+          ip = cfConnectingIP.trim();
+        }
+      }
+    }
   }
 
-  const cfConnectingIP = headersList.get('cf-connecting-ip'); // Cloudflare
-  if (cfConnectingIP) {
-    return cfConnectingIP.trim();
+  // 3. Fallback to Next.js headers()
+  if (!ip || ip === 'unknown') {
+    const headersList = await headers();
+
+    // Check common proxy headers (in order of preference)
+    const forwardedFor = headersList.get('x-forwarded-for');
+    if (forwardedFor) {
+      // X-Forwarded-For can contain multiple IPs, take the first one
+      ip = forwardedFor.split(',')[0]?.trim() || 'unknown';
+    }
+
+    if (!ip || ip === 'unknown') {
+      const realIP = headersList.get('x-real-ip');
+      if (realIP) {
+        ip = realIP.trim();
+      }
+    }
+
+    if (!ip || ip === 'unknown') {
+      const cfConnectingIP = headersList.get('cf-connecting-ip'); // Cloudflare
+      if (cfConnectingIP) {
+        ip = cfConnectingIP.trim();
+      }
+    }
   }
 
-  // Fallback to connection remote address if available
-  // This won't work in serverless environments but is here for completeness
-  return 'unknown';
+  // Handle localhost/loopback addresses in development
+  if (isLocalhost(ip)) {
+    // In development, we can use a combination of user agent + timestamp
+    // to create a pseudo-unique identifier that changes when needed
+    const headersList = await headers();
+    const userAgent = headersList.get('user-agent') || 'unknown-browser';
+    const sessionId = generateDevSessionId(userAgent);
+    return `dev-${sessionId}`;
+  }
+
+  return ip || 'unknown';
+}
+
+/**
+ * Check if IP is localhost/loopback
+ */
+function isLocalhost(ip: string): boolean {
+  if (!ip || ip === 'unknown') return false;
+  
+  return (
+    ip === '127.0.0.1' ||
+    ip === '::1' ||
+    ip === 'localhost' ||
+    ip.startsWith('127.') ||
+    ip.startsWith('192.168.') ||
+    ip.startsWith('10.') ||
+    Boolean(ip.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./))
+  );
+}
+
+/**
+ * Generate a development session ID based on user agent and other factors
+ * This creates a unique identifier for development that can change when needed
+ */
+function generateDevSessionId(userAgent: string): string {
+  // Create a simple hash from user agent
+  const hash = userAgent
+    .split('')
+    .reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+  
+  // Add current date to make it change daily (optional)
+  const today = new Date().toISOString().split('T')[0];
+  
+  return `${Math.abs(hash)}-${today.replace(/-/g, '')}`;
 }
 
 /**
@@ -102,18 +184,21 @@ export async function determineUserRole(
 export async function getRateLimitIdentifier(
   role: RateLimitRole,
   session: BetterAuthSession | null,
+  req?: Request | any,
 ): Promise<string> {
   if (role === 'anonymous') {
-    return await getClientIP();
+    console.log(await getClientIP(req));
+    return await getClientIP(req);
   }
 
   // For registered/paid users, use userId
   if (session?.user?.id) {
     return session.user.id;
   }
+  console.log(await getClientIP(req));
 
   // Fallback to IP if somehow we don't have a userId
-  return await getClientIP();
+  return await getClientIP(req);
 }
 
 /**

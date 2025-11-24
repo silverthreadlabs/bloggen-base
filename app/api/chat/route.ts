@@ -1,5 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, type UIMessage } from 'ai';
+import { NextRequest } from 'next/server';
 import {
   getAuthenticatedUserFromRequest,
   handleApiError,
@@ -24,10 +25,10 @@ import {
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // Check rate limit
-    const rateLimitResult = await checkRateLimit();
+    const rateLimitResult = await checkRateLimit(req);
     if (!rateLimitResult.success) {
       return new Response(
         JSON.stringify({
