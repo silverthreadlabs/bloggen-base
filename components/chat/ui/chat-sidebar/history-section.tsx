@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, History, MessageSquare } from 'lucide-react';
+import { useState, useMemo, useRef, useLayoutEffect } from 'react';
+import { ChevronDown, ChevronRight, History, MessageSquare, MoreHorizontal } from 'lucide-react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -55,96 +55,96 @@ export function HistorySection({
   const [showAllChats, setShowAllChats] = useState(false);
   const CHAT_LIMIT = 10;
 
-  // Refs for the dynamic vertical line
+  // Refs
   const lineRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLDivElement>(null);
+  const listWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Keep the line in sync with the actual rendered content height
-  useEffect(() => {
-    if (!historyExpanded || !lineRef.current || !contentRef.current || !labelRef.current) {
+  // Calculate limited chats and total count
+  const {
+    limitedGroupedChats,
+    totalChatCount,
+    hasMoreChats,
+  } = useMemo(() => {
+    const sorted = Object.entries(groupedChats).sort(([a], [b]) => {
+      const order = ['Today', 'Yesterday'];
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return b.localeCompare(a);
+    });
+
+    if (showAllChats || searchQuery) {
+      return {
+        limitedGroupedChats: Object.fromEntries(sorted) as Record<string, Chat[]>,
+        totalChatCount: Object.values(groupedChats).flat().length,
+        hasMoreChats: false,
+      };
+    }
+
+    let count = 0;
+    const limited: Record<string, Chat[]> = {};
+
+    for (const [period, chats] of sorted) {
+      if (count >= CHAT_LIMIT) break;
+      const take = Math.min(chats.length, CHAT_LIMIT - count);
+      limited[period] = chats.slice(0, take);
+      count += take;
+    }
+
+    const total = Object.values(groupedChats).flat().length;
+
+    return {
+      limitedGroupedChats: limited,
+      totalChatCount: total,
+      hasMoreChats: total > CHAT_LIMIT,
+    };
+  }, [groupedChats, showAllChats, searchQuery]);
+
+  // Dynamic vertical line — perfectly matches the *rendered* list
+  useLayoutEffect(() => {
+    if (
+      !historyExpanded ||
+      !lineRef.current ||
+      !labelRef.current ||
+      !listWrapperRef.current
+    ) {
       if (lineRef.current) lineRef.current.style.height = '0px';
       return;
     }
 
     const updateLine = () => {
-      const labelRect = labelRef.current!.getBoundingClientRect();
-      const contentRect = contentRef.current!.getBoundingClientRect();
+      const labelBottom = labelRef.current!.getBoundingClientRect().bottom;
+      const listBottom = listWrapperRef.current!.getBoundingClientRect().bottom;
 
-      const height = contentRect.bottom - labelRect.bottom - 8; // small visual gap
+      const height = listBottom - labelBottom - 12; // small visual gap
       lineRef.current!.style.height = `${Math.max(0, height)}px`;
     };
 
     updateLine();
 
     const observer = new ResizeObserver(updateLine);
-    observer.observe(contentRef.current);
+    observer.observe(listWrapperRef.current);
     window.addEventListener('resize', updateLine);
 
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', updateLine);
     };
-  }, [historyExpanded, groupedChats, showAllChats, searchQuery, isLoading]);
+  }, [
+    historyExpanded,
+    limitedGroupedChats,
+    showAllChats,
+    searchQuery,
+    isLoading,
+  ]);
 
-  // --------------------------------------------------------------
-  // Properly typed memo that builds the (possibly limited) chat list
-  // --------------------------------------------------------------
-  const { limitedGroupedChats, totalChatCount, hasMoreChats } = useMemo(() => {
-    const sortedEntries = Object.entries(groupedChats).sort(([periodA], [periodB]) => {
-      const getPriorityAndDate = (period: string) => {
-        if (period === 'Today') return { priority: 0, date: new Date() };
-        if (period === 'Yesterday')
-          return { priority: 1, date: new Date(Date.now() - 24 * 60 * 60 * 1000) };
-
-        const monthDate = new Date(period + ' 1');
-        return { priority: 2, date: monthDate };
-      };
-
-      const { priority: pa, date: da } = getPriorityAndDate(periodA);
-      const { priority: pb, date: db } = getPriorityAndDate(periodB);
-
-      if (pa !== pb) return pa - pb;
-      return db.getTime() - da.getTime();
-    });
-
-    // Show everything when searching or when the user clicked “See all”
-    if (showAllChats || searchQuery) {
-      return {
-        limitedGroupedChats: Object.fromEntries(sortedEntries) as Record<string, Chat[]>,
-        totalChatCount: Object.values(groupedChats).flat().length,
-        hasMoreChats: false,
-      };
-    }
-
-    // Limit to CHAT_LIMIT items when collapsed
-    let countSoFar = 0;
-    const limited: Record<string, Chat[]> = {};
-
-    for (const [period, chats] of sortedEntries) {
-      if (countSoFar >= CHAT_LIMIT) break;
-
-      const needed = CHAT_LIMIT - countSoFar;
-      limited[period] = chats.slice(0, needed);
-      countSoFar += limited[period].length;
-    }
-
-    const overallTotal = Object.values(groupedChats).flat().length;
-
-    return {
-      limitedGroupedChats: limited,
-      totalChatCount: overallTotal,
-      hasMoreChats: overallTotal > CHAT_LIMIT,
-    };
-  }, [groupedChats, showAllChats, searchQuery]);
-
-  // ----------------------------------------------------------------
   // Render
-  // ----------------------------------------------------------------
-
   if (isSessionPending) {
     return (
-      <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+      <SidebarGroup className="flex-1 min-h-0 flex flex-col w-[286px]">
         <SidebarGroupLabel className="flex items-center gap-2">
           <History className="h-4 w-4" />
           <span>History</span>
@@ -208,25 +208,19 @@ export function HistorySection({
       {historyExpanded && (
         <div
           ref={lineRef}
-          className="absolute left-6 top-10 w-px bg-border z-0 pointer-events-none"
-          style={{ height: 0 }} // controlled by useEffect
+          className="absolute left-6 top-10 w-px bg-canvas-border z-0 pointer-events-none"
+          style={{ height: 0 }}
         />
       )}
 
-      {/* Content area */}
       <SidebarGroupContent
         className={cn(
-          'flex-1 min-h-0 overflow-hidden transition-all duration-200 ease-in-out',
-          historyExpanded ? 'opacity-100' : 'opacity-0 h-0',
+          'flex-1 min-h-0 overflow-hidden transition-all duration-200',
+          historyExpanded ? 'opacity-100' : 'opacity-0 h-0'
         )}
       >
-        <div
-          ref={contentRef}
-          className={cn(
-            'h-full overflow-y-auto ml-6 transition-opacity duration-200',
-            historyExpanded ? 'opacity-100' : 'opacity-0',
-          )}
-        >
+        {/* This div contains ONLY the actual list (no flex-fill) */}
+        <div ref={listWrapperRef} className="ml-6 overflow-y-auto">
           {isLoading ? (
             <SidebarMenu>
               {[...Array(4)].map((_, i) => (
@@ -245,13 +239,9 @@ export function HistorySection({
             <>
               {Object.entries(limitedGroupedChats).map(([period, periodChats]) => (
                 <div key={period} className="mb-4">
-                  <div className="py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
-                    <span>{period}</span>
-                    {searchQuery && (
-                      <span className="text-xs">
-                        {periodChats.length} {periodChats.length === 1 ? 'chat' : 'chats'}
-                      </span>
-                    )}
+                  <div className="py-1 text-xs font-medium text-muted-foreground">
+                    {period}
+                    {searchQuery && ` · ${periodChats.length}`}
                   </div>
 
                   <SidebarMenu>
@@ -270,18 +260,18 @@ export function HistorySection({
                 </div>
               ))}
 
-              {/* “See all” button */}
+              {/* Show more button */}
               {hasMoreChats && !searchQuery && (
-                <div className="pb-4 pt-2">
+                <div className="pt-2 pb-4">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowAllChats((v) => !v)}
+                    onClick={() => setShowAllChats(v => !v)}
                     className="w-full justify-center text-xs text-muted-foreground hover:text-foreground"
                   >
                     {showAllChats
                       ? 'Show less'
-                      : `See all ${totalChatCount - CHAT_LIMIT} more`}
+                      : `Show all ${totalChatCount - CHAT_LIMIT} more`}
                   </Button>
                 </div>
               )}
