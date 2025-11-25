@@ -133,6 +133,7 @@ export function ChatInput({
           name="imageUrl"
         /> */}
         <PromptInputTextarea
+          ref={textareaRef}
           onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}
           disabled={disabled}
