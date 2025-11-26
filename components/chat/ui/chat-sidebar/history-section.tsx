@@ -118,8 +118,7 @@ export function HistorySection({
     const updateLine = () => {
       const labelBottom = labelRef.current!.getBoundingClientRect().bottom;
       const listBottom = listWrapperRef.current!.getBoundingClientRect().bottom;
-
-      const height = listBottom - labelBottom - 12; // small visual gap
+      const height = listBottom - labelBottom - 12; 
       lineRef.current!.style.height = `${Math.max(0, height)}px`;
     };
 

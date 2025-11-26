@@ -166,7 +166,7 @@ export function ChatView({
       </Conversation>
 
       {/* Input Area - Hidden for non-owners */}
-      {!isReadOnly ? (
+      {(!isReadOnly || isNewChat) ? (
         <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg">
           <ChatInput
             text={text}

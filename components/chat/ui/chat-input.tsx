@@ -141,7 +141,7 @@ export function ChatInput({
 
       <PromptInputFooter>
         <div className="w-full">
-          <PromptInputTools className="w-full flex flex-col md:flex-row">
+          <PromptInputTools className="w-full flex flex-col md:flex-row items-baseline">
 
             <div className="flex gap-2 mb-3">
               <ToneSelector value={tone} onChange={onToneChangeAction} disabled={disabled} />
