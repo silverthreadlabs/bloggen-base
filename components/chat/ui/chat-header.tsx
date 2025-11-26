@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 type ChatHeaderProps = {
   title?: string;
@@ -23,6 +24,9 @@ type ChatHeaderProps = {
   onDeleteChat?: () => void;
   onPinChat?: (pinned: boolean) => void;
   onUpdateTitle?: (title: string) => void;
+  isPublic?: boolean;
+  isReadOnly?: boolean;
+  onMakePublic?: () => Promise<void>;
 };
 
 export function ChatHeader({
@@ -37,36 +41,35 @@ export function ChatHeader({
   onDeleteChat,
   onPinChat,
   onUpdateTitle,
+  isPublic = false,
+  isReadOnly = false,
+  onMakePublic,
 }: ChatHeaderProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
 
-  const handleShare = () => {
-    if (chatId && navigator.share) {
-      navigator
-        .share({
-          title: title,
-          url: window.location.href,
-        })
-        .catch(() => {
-          // Fallback: copy to clipboard
-          navigator.clipboard.writeText(window.location.href);
-        });
-    } else if (chatId) {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    if (!chatId) return;
+
+    // Make public first if needed
+    if (!isPublic && onMakePublic) {
+      await onMakePublic();
     }
+
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
   };
 
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
+    <div className="flex items-center justify-between md:px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
-        {isMobile && <SidebarTrigger className="h-6 w-6 p-0" />}
+        {isMobile && <SidebarTrigger className="h-6 w-6" />}
         {isSessionPending || isLoadingChat ? (
           <Skeleton className="h-6 w-32 rounded" />
         ) : (
-          <h1 className="text-lg font-bold">{title}</h1>
+          <h1 className="text-lg font-bold line-clamp-2">{title}</h1>
         )}
         {isSessionPending || isLoadingChat ? (
           <Skeleton className="h-5 w-16 rounded" />
