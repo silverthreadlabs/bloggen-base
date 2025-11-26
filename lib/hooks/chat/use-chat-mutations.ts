@@ -22,11 +22,11 @@ export function useCreateChat() {
         return [newChat, ...old];
       });
 
-      // Optimistically set chat detail query data with empty messages
-      // This prevents "Loading chat..." from showing when navigating to the new chat
+      // Fixed: Add required `visibility` field
       queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(newChat.id), {
         ...newChat,
         messages: [],
+        visibility: 'private' as const, // or 'public' depending on your app logic
       });
     },
     onError: () => {
@@ -86,10 +86,13 @@ export function useUpdateChatTitleInCache() {
             title,
             createdAt: now,
             updatedAt: now,
-            userId: '',
+            userId: '', // or better: use current user ID if available
             messages: [],
+            visibility: 'private' as const, // ← THIS WAS MISSING
+            // pinned is optional, so it's fine if omitted
           };
         }
+
         return {
           ...oldData,
           title,
