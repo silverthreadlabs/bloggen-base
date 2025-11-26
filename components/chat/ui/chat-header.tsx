@@ -1,64 +1,113 @@
 import { MoreVertical, Pin, Share2, SquarePen, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 type ChatHeaderProps = {
   title?: string;
   chatId?: string;
   pinned?: boolean;
+  isNewChat?: boolean;
+  isGuestUser?: boolean;
+  isSessionPending?: boolean;
+  isLoadingChat?: boolean;
   onNewChatAction: () => void;
   onDeleteChat?: () => void;
   onPinChat?: (pinned: boolean) => void;
   onUpdateTitle?: (title: string) => void;
+  isPublic?: boolean;
+  isReadOnly?: boolean;
+  onMakePublic?: () => Promise<void>;
 };
 
 export function ChatHeader({
   title = 'New Chat',
   chatId,
   pinned = false,
+  isNewChat = true,
+  isGuestUser = false,
+  isSessionPending = false,
+  isLoadingChat = false,
   onNewChatAction,
   onDeleteChat,
   onPinChat,
   onUpdateTitle,
+  isPublic = false,
+  isReadOnly = false,
+  onMakePublic,
 }: ChatHeaderProps) {
-  // If chatId exists, it's not a new chat (regardless of title)
-  // Title might be "New Chat" temporarily even after chat is created
-  const isNewChat = !chatId;
+  const { isMobile } = useSidebar();
+  const router = useRouter();
 
-  const handleShare = () => {
-    if (chatId && navigator.share) {
-      navigator
-        .share({
-          title: title,
-          url: window.location.href,
-        })
-        .catch(() => {
-          // Fallback: copy to clipboard
-          navigator.clipboard.writeText(window.location.href);
-        });
-    } else if (chatId) {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    if (!chatId) return;
+
+    // Make public first if needed
+    if (!isPublic && onMakePublic) {
+      await onMakePublic();
     }
+
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
   };
 
+
   return (
-    <div className="flex items-center justify-between px-4 py-3 shrink-0 w-full">
+    <div className="flex items-center justify-between md:px-4 py-3 shrink-0 w-full">
       <div className="flex items-center gap-2 flex-1">
-        <h1 className="text-lg font-bold">{title}</h1>
+        {isMobile && <SidebarTrigger className="h-6 w-6" />}
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-6 w-32 rounded" />
+        ) : (
+          <h1 className="text-lg font-bold line-clamp-2">{title}</h1>
+        )}
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-5 w-16 rounded" />
+        ) : (
+          isGuestUser && (
+            <Badge variant="secondary" className="text-xs">
+              Guest Chat
+            </Badge>
+          )
+        )}
       </div>
 
       <div className="flex items-center gap-2">
-        {!isNewChat && (
+        {isSessionPending || isLoadingChat ? (
+          <Skeleton className="h-8 w-20 rounded" />
+        ) : (
+          isGuestUser && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/sign-in')}
+            >
+              Login
+            </Button>
+          )
+        )}
+
+        {!isNewChat && !isGuestUser && (
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" iconOnly leadingIcon={<MoreVertical className="h-4 w-4" />} className="h-8 w-8 p-0" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  leadingIcon={<MoreVertical className="h-4 w-4" />}
+                  className="h-8 w-8 p-0"
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 {onPinChat && (
@@ -109,7 +158,6 @@ export function ChatHeader({
             iconOnly
             leadingIcon={<SquarePen className="h-4 w-4" />}
           />
-
         )}
       </div>
     </div>

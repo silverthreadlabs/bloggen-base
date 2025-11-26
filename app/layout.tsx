@@ -5,7 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { WrapperWithQuery } from '@/components/wrapper';
 
 import './global.css';
-import { RootProvider } from 'fumadocs-ui/provider';
+import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Toaster } from '@/components/ui/sonner';
 
 const manrope = Manrope({

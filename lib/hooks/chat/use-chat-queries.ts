@@ -7,10 +7,11 @@ import { chatKeys } from './query-keys';
 /**
  * Fetch all chats for the current user
  */
-export function useChats() {
+export function useChats(enabled = true) {
   return useQuery({
     queryKey: chatKeys.list(),
     queryFn: fetchChats,
+    enabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
   });

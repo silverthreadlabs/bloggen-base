@@ -305,7 +305,7 @@ export function PromptInputAttachment({
           {...props}
         >
           <div className="relative size-5 shrink-0">
-            <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-canvas-bg transition-opacity group-hover:opacity-0">
+            <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-canvas-bg">
               {isImage ? (
                 <img
                   alt={filename || 'attachment'}
@@ -320,23 +320,25 @@ export function PromptInputAttachment({
                 </div>
               )}
             </div>
-            <Button
-              aria-label="Remove attachment"
-              className="absolute inset-0 size-5 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
-              onClick={(e) => {
-                e.stopPropagation();
-                attachments.remove(data.id);
-              }}
-              type="button"
-              variant="ghost"
-              iconOnly
-              leadingIcon={<XIcon />}
-            >
-              <span className="sr-only">Remove</span>
-            </Button>
           </div>
 
           <span className="flex-1 truncate">{attachmentLabel}</span>
+
+          <Button
+            aria-label="Remove attachment"
+            // className="size-4 cursor-pointer rounded p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-2.5"
+            onClick={(e) => {
+              e.stopPropagation();
+              attachments.remove(data.id);
+            }}
+            type="button"
+            variant="ghost"
+            iconOnly
+            leadingIcon={<XIcon size={12} />}
+            size="sm"
+          >
+            <span className="sr-only">Remove</span>
+          </Button>
         </div>
       </HoverCardTrigger>
       <PromptInputHoverCardContent className="w-auto p-2 max-w-72">
@@ -471,6 +473,7 @@ export const PromptInput = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const lastErrorTimeRef = useRef(0);
 
   // Find nearest form to scope drag & drop
   useEffect(() => {
@@ -526,10 +529,13 @@ export const PromptInput = ({
       const rejected = incoming.filter((f) => !matchesAccept(f));
       if (rejected.length > 0) {
         const rejectedNames = rejected.map(f => f.name).join(', ');
-        onError?.({
-          code: 'accept',
-          message: `File type not supported: ${rejectedNames}`,
-        });
+        if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+          lastErrorTimeRef.current = Date.now();
+          onError({
+            code: 'accept',
+            message: `File type not supported: ${rejectedNames}`,
+          });
+        }
       }
 
       if (incoming.length && accepted.length === 0) {
@@ -544,10 +550,13 @@ export const PromptInput = ({
       const tooLarge = accepted.filter((f) => !withinSize(f));
       if (tooLarge.length > 0) {
         const largeNames = tooLarge.map(f => f.name).join(', ');
-        onError?.({
-          code: 'max_file_size',
-          message: `File too large: ${largeNames}`,
-        });
+        if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+          lastErrorTimeRef.current = Date.now();
+          onError({
+            code: 'max_file_size',
+            message: `File too large: ${largeNames}`,
+          });
+        }
       }
 
       if (accepted.length > 0 && sized.length === 0) {
@@ -579,10 +588,13 @@ export const PromptInput = ({
         const capped =
           typeof capacity === 'number' ? uniqueFiles.slice(0, capacity) : uniqueFiles;
         if (typeof capacity === 'number' && uniqueFiles.length > capacity) {
-          onError?.({
-            code: 'max_files',
-            message: 'Too many files. Some were not added.',
-          });
+          if (onError && Date.now() - lastErrorTimeRef.current > 1000) {
+            lastErrorTimeRef.current = Date.now();
+            onError({
+              code: 'max_files',
+              message: `Maximum ${maxFiles} files allowed.`,
+            });
+          }
         }
 
         newItems = [];
@@ -932,7 +944,7 @@ export const PromptInputTextarea = forwardRef<
   return (
     <InputGroupTextarea
       ref={ref}
-      className={cn('field-sizing-content max-h-48 min-h-16', className)}
+      className={cn('field-sizing-content max-h-48 min-h-16 text-sm', className)}
       name="message"
       onCompositionEnd={() => setIsComposing(false)}
       onCompositionStart={() => setIsComposing(true)}
@@ -1240,15 +1252,23 @@ export const PromptInputSpeechButton = ({
     <PromptInputButton
       className={cn(
         'relative transition-all duration-200',
-        isListening &&
-        'animate-pulse bg-secondary-bg-hover text-canvas-text-contrast',
+        isListening && 'animate-pulse bg-accent text-white',
         className,
       )}
-      disabled={!recognition}
+      disabled={!recognition || props.disabled}
       onClick={toggleListening}
       {...props}
       iconOnly
-      leadingIcon={<MicIcon className="size-4" />}
+      leadingIcon={
+        isListening ? (
+          <div className="relative">
+            <span className="absolute -top-1 -right-1.5 size-2.5 animate-ping rounded-full bg-red-500" />
+            <span className="absolute -top-1 -right-1.5 size-2.5 rounded-full bg-red-500" />
+          </div>
+        ) : (
+          <MicIcon className="size-4" />
+        )
+      }
     />
   );
 };

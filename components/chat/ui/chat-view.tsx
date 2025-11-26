@@ -10,11 +10,14 @@ import { Loader } from '@/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
 import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
+import { Badge } from '@/components/ui/badge';
+import { Globe } from 'lucide-react';
 
 import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
 import { EmptyState } from './empty-state';
 import { MessageList } from './message-list';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Props = {
   messages: UIMessage[];
@@ -40,6 +43,13 @@ type Props = {
   chatTitle?: string;
   chatId?: string;
   pinned?: boolean;
+  isGuestUser?: boolean;
+
+  // NEW: Sharing props
+  isPublic?: boolean;
+  isReadOnly?: boolean;
+  onMakePublic?: () => Promise<void>;
+
   onSubmit: (message: PromptInputMessage) => void;
   onSuggestionClick: (suggestion: string) => void;
   onDelete: (messageId: string) => void;
@@ -48,7 +58,7 @@ type Props = {
   onNewChat: () => void;
   onDeleteChat: () => void;
   onUpdateTitle: (title: string) => void;
-  onPinChat?: (pinned: boolean) => void;
+  onPinChat?: () => void;
   onStop: () => void;
 };
 
@@ -75,7 +85,11 @@ export function ChatView({
   chatTitle,
   chatId,
   pinned = false,
+  isGuestUser = false,
   fileUploads,
+  isPublic = false,
+  isReadOnly = false,
+  onMakePublic,
   onSubmit,
   onSuggestionClick,
   onDelete,
@@ -87,29 +101,44 @@ export function ChatView({
   onPinChat,
   onStop,
 }: Props) {
-  const isNewChat = messages.length === 0 && !chatId;
+  const isNewChat = messages.length === 0;
 
   return (
-    <div className="relative flex size-full pb-4 w-full flex-col overflow-hidden">
+    <div className="relative flex size-full pb-4 w-full items-center flex-col overflow-hidden">
       <ChatHeader
         title={chatTitle}
         chatId={chatId}
         pinned={pinned}
+        isNewChat={isNewChat}
+        isGuestUser={isGuestUser}
+        isSessionPending={isLoading}
+        isLoadingChat={isLoadingChat}
         onNewChatAction={onNewChat}
         onDeleteChat={chatTitle ? onDeleteChat : undefined}
         onUpdateTitle={chatTitle ? onUpdateTitle : undefined}
         onPinChat={onPinChat}
+        isPublic={isPublic}
+        isReadOnly={isReadOnly}
+        onMakePublic={onMakePublic}
       />
 
-      <Conversation className="flex-1 overflow-y-auto">
+      <Conversation className="flex-1 overflow-y-auto max-w-4xl w-full">
         <ConversationContent>
           {isLoadingChat ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="mx-auto w-full max-w-2xl px-4">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Loader />
-                  <span className="text-sm">Loading messages...</span>
-                </div>
+            <div className="mx-auto w-full px-4 py-8">
+              <div className="flex flex-col gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={i % 2 === 0 ? 'flex flex-col items-end' : 'flex flex-col items-start'}
+                  >
+                    <div className="flex gap-3 items-start w-full max-w-lg">
+                      <div className={i % 2 === 0 ? 'flex-1 flex flex-col gap-2 items-end' : 'flex-1 flex flex-col gap-2'}>
+                        <Skeleton className="h-8 w-1/2" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : messages.length === 0 ? (
@@ -127,6 +156,7 @@ export function ChatView({
                 onDelete={onDelete}
                 onEdit={onEdit}
                 onRegenerate={onRegenerate}
+                isReadOnly={isReadOnly}
               />
               {status === 'submitted' && <Loader />}
             </div>
@@ -135,19 +165,9 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t pt-4 rounded-lg">
-        {/* Suggestions commented out for now */}
-        {/* <Suggestions className="px-4">
-          {suggestions.map((suggestion) => (
-            <Suggestion
-              key={suggestion}
-              onClick={() => onSuggestionClick(suggestion)}
-              suggestion={suggestion}
-            />
-          ))}
-        </Suggestions> */}
-
-        <div className="mx-auto w-full max-w-4xl px-4 pb-4">
+      {/* Input Area - Hidden for non-owners */}
+      {(!isReadOnly || isNewChat) ? (
+        <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg">
           <ChatInput
             text={text}
             context={context}
@@ -170,7 +190,12 @@ export function ChatView({
             disabled={isLoadingChat}
           />
         </div>
-      </div>
+      ) : (
+        <div className="p-6 text-center text-sm text-canvas-text">
+          <Globe className="inline-block w-4 h-4 mr-2" />
+          This is a read-only public shared chat
+        </div>
+      )}
     </div>
   );
 }

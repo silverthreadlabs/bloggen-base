@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { UIMessage } from '@ai-sdk/react';
-import { and, desc, eq, gte, inArray } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, or, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { chat, type DBMessage, message, vote } from './schema';
@@ -54,11 +54,19 @@ export async function createChat(
   return newChat;
 }
 
-export async function getChatById(chatId: string) {
+export async function getChatById(chatId: string, userId?: string) {
   const [chatData] = await db
     .select()
     .from(chat)
-    .where(eq(chat.id, chatId))
+    .where(
+      and(
+        eq(chat.id, chatId),
+        or(
+          eq(chat.visibility, 'public'),
+          userId ? eq(chat.userId, userId) : sql`false`
+        )
+      )
+    )
     .limit(1);
 
   return chatData;
@@ -100,6 +108,24 @@ export async function togglePinChat(chatId: string, pinned: boolean) {
       updatedAt: new Date(),
     })
     .where(eq(chat.id, chatId))
+    .returning();
+
+  return updated;
+}
+
+export async function makeChatPublic(chatId: string, userId: string) {
+  const [updated] = await db
+    .update(chat)
+    .set({
+      visibility: 'public',
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(chat.id, chatId),
+        eq(chat.userId, userId)
+      )
+    )
     .returning();
 
   return updated;

@@ -50,8 +50,16 @@ export async function POST(req: Request) {
       );
     }
     
-    // Authenticate user
-    const user = await getAuthenticatedUserFromRequest(req);
+    // Try to authenticate user (optional for guest users)
+    let user: any = null;
+    try {
+      user = await getAuthenticatedUserFromRequest(req);
+    } catch (error) {
+      // User is not authenticated - treat as guest
+      user = null;
+    }
+    
+    const isGuestUser = !user;
     
     // Parse request
     const url = new URL(req.url);
@@ -74,7 +82,7 @@ export async function POST(req: Request) {
     // Handle chat creation/retrieval
     let chatTitle = 'New Chat';
     
-    if (chatId) {
+    if (chatId && !isGuestUser) {
       const existingChat = await getChatById(chatId);
       if (!existingChat) {
         const firstUserMessage = messages.find((m) => m.role === 'user');
@@ -91,10 +99,13 @@ export async function POST(req: Request) {
       } else {
         chatTitle = existingChat.title;
       }
+    } else if (isGuestUser) {
+      // For guest users, use a simple title
+      chatTitle = 'Guest Chat';
     }
     
-    // Save user message
-    if (chatId && messages.length > 0) {
+    // Save user message (skip for guest users)
+    if (chatId && messages.length > 0 && !isGuestUser) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'user') {
         try {

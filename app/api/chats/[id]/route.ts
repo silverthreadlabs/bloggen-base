@@ -11,6 +11,7 @@ import {
   deleteChat,
   getMessagesByChatId,
   updateChatTitle,
+  getChatById
 } from '@/lib/db/chat-queries';
 
 type RouteContext = {
@@ -20,13 +21,29 @@ type RouteContext = {
 // GET /api/chats/[id] - Get chat with messages
 export async function GET(req: Request, context: RouteContext) {
   try {
-    const user = await getAuthenticatedUserFromRequest(req);
     const { id } = await parseRouteParams(context.params);
 
-    const chat = await verifyChatOwnership(id, user.id);
-    const dbMessages = await getMessagesByChatId(id);
+    // Try to get session (may be null for public access)
+    let userId: string | undefined;
+    try {
+      const user = await getAuthenticatedUserFromRequest(req);
+      userId = user.id;
+    } catch (error) {
+      // Not authenticated → that's OK for public chats
+      userId = undefined;
+    }
 
-    // Convert DB messages to UIMessage format
+    // This function allows public + owner access
+    const chat = await getChatById(id, userId);
+
+    if (!chat) {
+      return NextResponse.json(
+        { error: 'Chat not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    const dbMessages = await getMessagesByChatId(id);
     const messages = dbMessagesToUIMessages(dbMessages);
 
     return NextResponse.json({ chat, messages });
