@@ -165,7 +165,7 @@ export function ChatInput({
                   className="h-10 w-10"
                 />
 
-                {/* <PromptInputButton
+                <PromptInputButton
                   onClick={() => onWebSearchChangeAction(!useWebSearch)}
                   variant={useWebSearch ? "solid" : "ghost"}
                   disabled={disabled}
@@ -173,7 +173,7 @@ export function ChatInput({
                 >
                   <GlobeIcon size={16} />
                   <span className="md:inline">Search</span>
-                </PromptInputButton> */}
+                </PromptInputButton>
               </div>
 
               <PromptInputSubmit

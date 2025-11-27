@@ -165,12 +165,7 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      {isReadOnly ? (
-        <div className="border-t bg-muted/50 p-6 text-center text-sm text-muted-foreground">
-          <Globe className="inline-block w-4 h-4 mr-2" />
-          This is a public shared chat read-only
-        </div>
-      ) : (
+      {!isReadOnly || isNewChat ? (
         <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg">
           <ChatInput
             text={text}
@@ -193,6 +188,11 @@ export function ChatView({
             onStopAction={onStop}
             disabled={isLoadingChat}
           />
+        </div>
+      ) : (
+        <div className="border-t bg-muted/50 p-6 text-center text-sm text-muted-foreground">
+          <Globe className="inline-block w-4 h-4 mr-2" />
+          This is a public shared chat read-only
         </div>
       )}
     </div>
