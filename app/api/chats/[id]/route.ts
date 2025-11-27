@@ -13,6 +13,7 @@ import {
   getMessagesByChatId,
   getSharedChatById,
   updateChatTitle,
+  getChatById
 } from '@/lib/db/chat-queries';
 
 type RouteContext = {
