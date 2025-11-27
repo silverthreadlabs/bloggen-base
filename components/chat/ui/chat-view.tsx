@@ -10,6 +10,8 @@ import { Loader } from '@/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
 import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
+import { Badge } from '@/components/ui/badge';
+import { Globe } from 'lucide-react';
 
 import { ChatHeader } from './chat-header';
 import { ChatInput } from './chat-input';
@@ -42,6 +44,12 @@ type Props = {
   chatId?: string;
   pinned?: boolean;
   isGuestUser?: boolean;
+
+  // NEW: Sharing props
+  isPublic?: boolean;
+  isReadOnly?: boolean;
+  onMakePublic?: () => Promise<void>;
+
   onSubmit: (message: PromptInputMessage) => void;
   onSuggestionClick: (suggestion: string) => void;
   onDelete: (messageId: string) => void;
@@ -50,7 +58,7 @@ type Props = {
   onNewChat: () => void;
   onDeleteChat: () => void;
   onUpdateTitle: (title: string) => void;
-  onPinChat?: (pinned: boolean) => void;
+  onPinChat?: () => void;
   onStop: () => void;
 };
 
@@ -79,6 +87,9 @@ export function ChatView({
   pinned = false,
   isGuestUser = false,
   fileUploads,
+  isPublic = false,
+  isReadOnly = false,
+  onMakePublic,
   onSubmit,
   onSuggestionClick,
   onDelete,
@@ -106,29 +117,28 @@ export function ChatView({
         onDeleteChat={chatTitle ? onDeleteChat : undefined}
         onUpdateTitle={chatTitle ? onUpdateTitle : undefined}
         onPinChat={onPinChat}
+        isPublic={isPublic}
+        isReadOnly={isReadOnly}
+        onMakePublic={onMakePublic}
       />
 
       <Conversation className="flex-1 overflow-y-auto max-w-4xl w-full">
         <ConversationContent>
           {isLoadingChat ? (
-            <div className="mx-auto w-full  px-4 py-8">
+            <div className="mx-auto w-full px-4 py-8">
               <div className="flex flex-col gap-6">
-                {[...Array(4)].map((_, i) => {
-                  const isUser = i % 2 === 0;
-                  return (
-                    <div key={i} className={isUser ? 'flex flex-col items-end' : 'flex flex-col items-start'}>
-                      <div className="flex gap-3 items-start w-full max-w-lg">
-                        <div className={isUser ? 'flex-1 flex flex-col gap-2 items-end' : 'flex-1 flex flex-col gap-2'}>
-                          <Skeleton className="h-8 w-1/2" />
-                        </div>
-                      </div>
-                      <div className={isUser ? 'flex gap-2 mt-2 justify-end' : 'flex gap-2 mt-2 justify-start'}>
-                        <Skeleton className="h-6 w-10 rounded-md" />
-                        <Skeleton className="h-6 w-10 rounded-md" />
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={i % 2 === 0 ? 'flex flex-col items-end' : 'flex flex-col items-start'}
+                  >
+                    <div className="flex gap-3 items-start w-full max-w-lg">
+                      <div className={i % 2 === 0 ? 'flex-1 flex flex-col gap-2 items-end' : 'flex-1 flex flex-col gap-2'}>
+                        <Skeleton className="h-8 w-1/2" />
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           ) : messages.length === 0 ? (
@@ -146,6 +156,7 @@ export function ChatView({
                 onDelete={onDelete}
                 onEdit={onEdit}
                 onRegenerate={onRegenerate}
+                isReadOnly={isReadOnly}
               />
               {status === 'submitted' && <Loader />}
             </div>
@@ -154,19 +165,13 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="bg-canvas-bg grid shrink-0 gap-4 border-t max-w-4xl w-full pt-4 rounded-lg">
-        {/* Suggestions commented out for now */}
-        {/* <Suggestions className="px-4">
-          {suggestions.map((suggestion) => (
-            <Suggestion
-              key={suggestion}
-              onClick={() => onSuggestionClick(suggestion)}
-              suggestion={suggestion}
-            />
-          ))}
-        </Suggestions> */}
-
-        <div className="mx-auto w-full max-w-4xl px-4 pb-4">
+      {isReadOnly ? (
+        <div className="border-t bg-muted/50 p-6 text-center text-sm text-muted-foreground">
+          <Globe className="inline-block w-4 h-4 mr-2" />
+          This is a public shared chat read-only
+        </div>
+      ) : (
+        <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg">
           <ChatInput
             text={text}
             context={context}
@@ -189,7 +194,7 @@ export function ChatView({
             disabled={isLoadingChat}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

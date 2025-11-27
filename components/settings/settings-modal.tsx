@@ -128,7 +128,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className={cn(
-          '!max-w-4xl w-full h-[90vh] max-h-[800px] p-0',
+          '!max-w-6xl w-full h-[90vh] max-h-[800px] p-0',
           'flex flex-col overflow-hidden'
         )}
         showCloseButton={false}

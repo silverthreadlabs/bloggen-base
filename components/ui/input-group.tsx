@@ -101,7 +101,7 @@ function InputGroupButton({
   type = 'button',
   variant = 'ghost',
   size = 'xs',
-  iconOnly = false,
+  iconOnly = true,
   leadingIcon,
   ...props
 }: Omit<React.ComponentProps<typeof Button>, 'size'> &

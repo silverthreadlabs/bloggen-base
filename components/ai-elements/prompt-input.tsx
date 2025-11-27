@@ -944,7 +944,7 @@ export const PromptInputTextarea = forwardRef<
   return (
     <InputGroupTextarea
       ref={ref}
-      className={cn('field-sizing-content max-h-48 min-h-16', className)}
+      className={cn('field-sizing-content max-h-48 min-h-16 text-sm', className)}
       name="message"
       onCompositionEnd={() => setIsComposing(false)}
       onCompositionStart={() => setIsComposing(true)}
@@ -1252,15 +1252,23 @@ export const PromptInputSpeechButton = ({
     <PromptInputButton
       className={cn(
         'relative transition-all duration-200',
-        isListening &&
-        'animate-pulse bg-secondary-bg-hover text-canvas-text-contrast',
+        isListening && 'animate-pulse bg-accent text-white',
         className,
       )}
-      disabled={!recognition}
+      disabled={!recognition || props.disabled}
       onClick={toggleListening}
       {...props}
       iconOnly
-      leadingIcon={<MicIcon className="size-4" />}
+      leadingIcon={
+        isListening ? (
+          <div className="relative">
+            <span className="absolute -top-1 -right-1.5 size-2.5 animate-ping rounded-full bg-red-500" />
+            <span className="absolute -top-1 -right-1.5 size-2.5 rounded-full bg-red-500" />
+          </div>
+        ) : (
+          <MicIcon className="size-4" />
+        )
+      }
     />
   );
 };

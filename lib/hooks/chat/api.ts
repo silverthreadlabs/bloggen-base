@@ -109,7 +109,7 @@ export async function saveMessage(
       id: customId, // Include custom ID if provided
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to save message');
   }
@@ -143,5 +143,17 @@ export async function deleteMessage(
   });
   if (!response.ok) {
     throw new Error('Failed to delete message');
+  }
+}
+
+export async function makeChatPublic(chatId: string): Promise<void> {
+  const response = await fetch(`/api/chats/${chatId}/share`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || 'Failed to make chat public');
   }
 }

@@ -233,7 +233,6 @@ export function ChatSidebar({ currentChatId: initialChatId }: Props) {
                 isSessionPending={isSessionPending}
                 isGuestUser={isGuestUser}
             />
-            <SidebarRail />
         </Sidebar>
     );
 }

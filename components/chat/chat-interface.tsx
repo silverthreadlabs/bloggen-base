@@ -32,6 +32,7 @@ import { useMessageModifiers } from '@/lib/hooks/use-url-state';
 import type { ChatWithMessages } from '@/lib/types/chat';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
+import { useMakeChatPublic } from '@/lib/hooks/chat/use-chat-mutations';
 
 type Props = {
   chatId: string;
@@ -59,12 +60,28 @@ export function ChatInterface({
   const isFirstMessageRef = useRef(!initialChat?.messages?.length);
   const pendingSavesRef = useRef<Set<string>>(new Set());
   const messagesInitializedRef = useRef(false);
-  const userContextRef = useRef(''); // Store user's actual context separately
+  const userContextRef = useRef('');
 
   const { data: session } = useSession();
   const isGuestUser = !session?.user;
+  const currentUserId = session?.user?.id;
 
   const { data: allChats } = useChats(!isGuestUser);
+  const { data: presentChat } = useChatQuery(isGuestUser ? undefined : chatId);
+  const chat = presentChat || initialChat;
+
+  const isOwner = currentUserId === chat?.userId;
+  const isPublic = chat?.visibility === 'public';
+  const isReadOnly = !isOwner;
+  const makePublic = useMakeChatPublic(chatId);
+  const handleMakePublic = useCallback(async () => {
+    if (isPublic || !isOwner || makePublic.isPending) return;
+    try {
+      await makePublic.mutateAsync();
+    } catch {
+      // Error already shown in hook
+    }
+  }, [isPublic, isOwner, makePublic]);
 
   // Build full context from user context and current modifiers
   const buildFullContext = useCallback((userContext: string): string => {
@@ -205,10 +222,10 @@ export function ChatInterface({
       // Get metadata for title updates
       const metadata = result.message.metadata as
         | {
-            chatId?: string;
-            chatTitle?: string;
-            isNewChat?: boolean;
-          }
+          chatId?: string;
+          chatTitle?: string;
+          isNewChat?: boolean;
+        }
         | undefined;
 
       // Handle URL update for first message
@@ -381,9 +398,9 @@ export function ChatInterface({
       const updatedMessages = messages.map((m) =>
         m.id === messageId
           ? {
-              ...m,
-              parts: newParts,
-            }
+            ...m,
+            parts: newParts,
+          }
           : m,
       );
 
@@ -614,6 +631,9 @@ export function ChatInterface({
       onNewChat={handleNewChat}
       onUpdateTitle={handleUpdateTitle}
       onStop={stop}
+      isPublic={isPublic}
+      isReadOnly={isReadOnly}
+      onMakePublic={handleMakePublic}
     />
   );
 }

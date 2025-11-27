@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   getAuthenticatedUserFromRequest,
+  getOptionalUserFromRequest,
   handleApiError,
   parseRouteParams,
   validateRequired,
@@ -10,6 +11,7 @@ import {
   dbMessagesToUIMessages,
   deleteChat,
   getMessagesByChatId,
+  getSharedChatById,
   updateChatTitle,
 } from '@/lib/db/chat-queries';
 
@@ -20,13 +22,23 @@ type RouteContext = {
 // GET /api/chats/[id] - Get chat with messages
 export async function GET(req: Request, context: RouteContext) {
   try {
-    const user = await getAuthenticatedUserFromRequest(req);
+    // Use optional auth (null if no session)
+    const user = await getOptionalUserFromRequest(req);
+    const userId = user?.id ?? undefined;
+
     const { id } = await parseRouteParams(context.params);
 
-    const chat = await verifyChatOwnership(id, user.id);
-    const dbMessages = await getMessagesByChatId(id);
+    // Allows public chats even if userId=undefined
+    const chat = await getSharedChatById(id, userId);
 
-    // Convert DB messages to UIMessage format
+    if (!chat) {
+      return NextResponse.json(
+        { error: 'Chat not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    const dbMessages = await getMessagesByChatId(id);
     const messages = dbMessagesToUIMessages(dbMessages);
 
     return NextResponse.json({ chat, messages });

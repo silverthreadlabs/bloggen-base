@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { togglePinChat } from '@/lib/actions/chat-actions';
-import { createChat, deleteChat, updateChatTitle } from './api';
+import { createChat, deleteChat, makeChatPublic, updateChatTitle,  } from './api';
 import { chatKeys } from './query-keys';
 import type { Chat, ChatWithMessages } from '@/lib/types/chat';
 
@@ -249,6 +249,22 @@ export function useTogglePinChat() {
     onSettled: (_data, _error, { chatId }) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+    },
+  });
+}
+
+export function useMakeChatPublic(chatId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => makeChatPublic(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
+      queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+      toast.success('Chat is now public, anyone can view this link');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to share chat');
     },
   });
 }

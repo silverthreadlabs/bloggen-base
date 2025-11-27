@@ -7,7 +7,7 @@ import { Action, Actions } from '@/components/ai-elements/actions';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import { Response } from '@/components/ai-elements/response';
 import { useChatActions } from '@/lib/hooks/chat';
-import { MessageAvatar } from './message-avatar';
+// import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from '../utils/message-utils';
 import { FileAttachmentsGrid } from './file-attachment-display';
 import { cn } from '@/lib/utils';
@@ -17,15 +17,18 @@ type Props = {
   messages: UIMessage[];
   isLoading: boolean;
   isProcessing?: boolean;
+  isReadOnly?: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onRegenerate: (messageId: string) => void;
+
 };
 
 export function MessageList({
   messages,
   isLoading,
   isProcessing = false,
+  isReadOnly = false,
   onDelete,
   onEdit,
   onRegenerate,
@@ -156,14 +159,14 @@ export function MessageList({
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Display file attachments */}
                     {fileAttachments.length > 0 && (
                       <div className="mb-3">
                         <FileAttachmentsGrid files={fileAttachments} />
                       </div>
                     )}
-                    
+
                     {/* Display images from message parts */}
                     {(message.parts || [])
                       .filter((part) => {
@@ -193,7 +196,7 @@ export function MessageList({
                           </div>
                         );
                       })}
-                    
+
                     <Response isStreaming={isLastAssistant && isLoading}>
                       {messageText}
                     </Response>

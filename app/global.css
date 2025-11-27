@@ -349,14 +349,24 @@
     @apply bg-canvas-bg;
 }
 
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 .blogs-docs-layout {
+
     /* Hide the unwanted main tag from DocsLayout */
     main#nd-docs-layout {
         display: none !important;
     }
 
     /* Alternative: Remove the main tag styling but keep content */
-    main#nd-docs-layout > * {
+    main#nd-docs-layout>* {
         display: block !important;
     }
 
@@ -391,7 +401,7 @@
     }
 
     /* Styles removed and will be injected via browser */
-    #nd-page > div:first-child {
+    #nd-page>div:first-child {
         @apply !top-[65px];
     }
 

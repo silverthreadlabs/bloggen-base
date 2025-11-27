@@ -118,9 +118,10 @@ export function HistorySection({
       hasMoreChats: totalCount > CHAT_LIMIT
     };
   }, [groupedChats, showAllChats, searchQuery]);
+
   if (isSessionPending) {
     return (
-      <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+      <SidebarGroup className="flex-1 min-h-0 flex flex-col w-[286px]">
         <SidebarGroupLabel className="flex items-center gap-2">
           <History className="h-4 w-4" />
           <span>History</span>
@@ -142,7 +143,7 @@ export function HistorySection({
 
   if (isGuestUser) {
     return (
-      <SidebarGroup className="flex-1 min-h-0 flex flex-col">
+      <SidebarGroup className="flex-1 min-h-0 flex flex-col w-[286px]">
         <SidebarGroupLabel className="flex items-center gap-2">
           <History className="h-4 w-4" />
           <span>History</span>
@@ -196,7 +197,7 @@ export function HistorySection({
 
         <div
           className={cn(
-            'h-full transition-transform duration-200 ease-in-out overflow-y-auto ml-6',
+            'h-full transition-transform duration-200 ease-in-out overflow-y-auto ml-6 scrollbar-hide',
             historyExpanded ? 'translate-y-0' : '-translate-y-2',
           )}
         >
@@ -243,7 +244,7 @@ export function HistorySection({
                 </div>
               ))}
               
-              {hasMoreChats && !searchQuery && (
+              {totalChatCount > CHAT_LIMIT && !searchQuery && (
                 <div className="pb-4">
                   <Button
                     variant="ghost"

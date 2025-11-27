@@ -74,22 +74,17 @@ export function ChatInput({
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handle file additions - upload immediately using IDs from PromptInput
   const handleFileAdd = useCallback((filesWithIds: Array<{ id: string; file: File }>) => {
     for (const { id, file } of filesWithIds) {
-      // Validate file
       const validation = validateFile(file);
       if (!validation.valid) {
         toast.error(`${file.name}: ${validation.error}`);
         continue;
       }
-
-      // Start upload using the ID from PromptInput
       fileUploads.uploadFile(id, file);
     }
   }, [fileUploads]);
 
-  // Handle file removal - delete from server if uploaded
   const handleFileRemove = useCallback((fileId: string) => {
     fileUploads.removeFile(fileId);
   }, [fileUploads]);
@@ -114,6 +109,7 @@ export function ChatInput({
         </PromptInputAttachments>
       </PromptInputHeader>
       <PromptInputBody>
+
         <PromptInputTextarea
           onChange={(event) => onContextChangeAction(event.target.value)}
           value={context}
@@ -122,6 +118,7 @@ export function ChatInput({
           className="min-h-12 max-h-24 mb-2 text-sm"
           name="context"
         />
+
         <div className="w-full h-px bg-canvas-line"></div>
 
         {/* <PromptInputTextarea
@@ -132,65 +129,67 @@ export function ChatInput({
           className="min-h-12 max-h-16 mb-2 text-sm"
           name="imageUrl"
         /> */}
+
         <PromptInputTextarea
+          ref={textareaRef}
           onChange={(event) => onTextChangeAction(event.target.value)}
           value={text}
           disabled={disabled}
         />
+
       </PromptInputBody>
+
       <PromptInputFooter>
-        <PromptInputTools>
-          <PromptInputActionMenu>
-            <PromptInputActionMenuTrigger />
-            <PromptInputActionMenuContent>
-              <PromptInputActionAddAttachments />
-            </PromptInputActionMenuContent>
-          </PromptInputActionMenu>
-          <ToneSelector
-            value={tone}
-            onChange={onToneChangeAction}
-            disabled={disabled}
-          />
-          <LengthSelector
-            value={length}
-            onChange={onLengthChangeAction}
-            disabled={disabled}
-          />
-          {/* <PromptInputSpeechButton
-            textareaRef={textareaRef}
-            onTranscriptionChange={(transcribedText) => {
-              onTextChangeAction(transcribedText);
-            }}
-            disabled={disabled}
-          /> */}
-          {/* <PromptInputButton
-            onClick={() => onWebSearchChangeAction(!useWebSearch)}
-            variant={useWebSearch ? 'solid' : 'ghost'}
-            disabled={disabled}
-          >
-            <GlobeIcon size={16} />
-            <span>Search</span>
-          </PromptInputButton> */}
-        </PromptInputTools>
-        <div className='flex flex-row items-center gap-2'>
-          <PromptInputSpeechButton
-            textareaRef={textareaRef}
-            onTranscriptionChange={(transcribedText) => {
-              onTextChangeAction(transcribedText);
-            }}
-            disabled={disabled}
-          />
-          <PromptInputSubmit
-            disabled={disabled || fileUploads.isAnyUploading() || !(text.trim() || status)}
-            status={status}
-            iconOnly
-            onClick={(e) => {
-              if (status === 'streaming') {
-                e.preventDefault();
-                onStopAction();
-              }
-            }}
-          />
+        <div className="w-full">
+          <PromptInputTools className="w-full flex flex-col md:flex-row items-baseline">
+
+            <div className="flex gap-2 mb-3">
+              <ToneSelector value={tone} onChange={onToneChangeAction} disabled={disabled} />
+              <LengthSelector value={length} onChange={onLengthChangeAction} disabled={disabled} />
+            </div>
+
+            <div className="flex items-center justify-between w-full">
+
+              <div className="flex items-center gap-3">
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger className="h-10 w-10" />
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+
+                <PromptInputSpeechButton
+                  textareaRef={textareaRef}
+                  onTranscriptionChange={(transcribedText) => onTextChangeAction(transcribedText)}
+                  disabled={disabled}
+                  className="h-10 w-10"
+                />
+
+                {/* <PromptInputButton
+                  onClick={() => onWebSearchChangeAction(!useWebSearch)}
+                  variant={useWebSearch ? "solid" : "ghost"}
+                  disabled={disabled}
+                  className="h-10 px-3.5"
+                >
+                  <GlobeIcon size={16} />
+                  <span className="md:inline">Search</span>
+                </PromptInputButton> */}
+              </div>
+
+              <PromptInputSubmit
+                disabled={disabled || fileUploads.isAnyUploading() || !(text.trim() || context.trim())}
+                status={status}
+                className="shrink-0"
+                onClick={(e) => {
+                  if (status === "streaming") {
+                    e.preventDefault();
+                    onStopAction();
+                  }
+                }}
+              />
+            </div>
+
+          </PromptInputTools>
         </div>
       </PromptInputFooter>
     </PromptInput>
