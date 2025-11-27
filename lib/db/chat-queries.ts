@@ -54,11 +54,19 @@ export async function createChat(
   return newChat;
 }
 
-export async function getChatById(chatId: string) {
+export async function getChatById(chatId: string, userId?: string) {
   const [chatData] = await db
     .select()
     .from(chat)
-    .where(eq(chat.id, chatId))
+    .where(
+      and(
+        eq(chat.id, chatId),
+        or(
+          eq(chat.visibility, 'public'),
+          userId ? eq(chat.userId, userId) : sql`false`
+        )
+      )
+    )
     .limit(1);
 
   return chatData;
