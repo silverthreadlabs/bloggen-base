@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TONE_LABELS, type ToneOption } from '@/lib/config/message-modifiers';
+import { ToneOption, TONE_LABELS } from '@/chat/utils/message-modifiers';
 
 type Props = {
   value: ToneOption;

@@ -7,7 +7,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq } from 'drizzle-orm';
 import { file as fileSchema } from '@/lib/db/schema';
-import { isMimeTypeAllowed } from '@/lib/utils/file-types';
+import { isMimeTypeAllowed } from '@/chat/utils/file-types';
 // Database setup
 const client = postgres(process.env.DB_CONNECTION_STRING!);
 const db = drizzle(client);

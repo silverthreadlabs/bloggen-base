@@ -13,14 +13,14 @@ import {
   saveMessage,
 } from '@/lib/db/chat-queries';
 import { linkFilesToMessage, getFileById } from '@/lib/db/file-queries';
-import { checkRateLimit, getRateLimitConfig } from '@/lib/rate-limit';
+import { checkRateLimit, getRateLimitConfig } from '@/chat/lib/rate-limit';
 import { generateChatTitle } from '@/lib/utils/generate-chat-title';
 import {
   processMessages,
   addContextToLastMessage,
   cleanMessages,
   convertMessagesToModelFormat,
-} from '@/lib/utils/chat';
+} from '@/chat/lib/utils';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;

@@ -7,7 +7,7 @@ import type { File as DBFile } from '@/lib/db/schema';
 import { PromptInputActionMenuItem } from '@/chat/components/ai-elements/prompt-input';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { isMimeTypeAllowed, getAllowedExtensions } from '@/lib/utils/file-types';
+import { getAllowedExtensions, isMimeTypeAllowed } from '@/chat/utils/file-types';
 
 export type FileAttachment = DBFile & {
   id: string;

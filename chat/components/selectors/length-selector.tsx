@@ -8,10 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  LENGTH_LABELS,
-  type LengthOption,
-} from '@/lib/config/message-modifiers';
+import { LENGTH_LABELS, LengthOption } from '@/chat/utils/message-modifiers';
+
 
 type Props = {
   value: LengthOption;

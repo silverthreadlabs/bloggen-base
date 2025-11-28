@@ -1,6 +1,7 @@
 /**
  * Hook for managing file uploads with immediate upload on selection
  */
+'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
