@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { togglePinChat } from '@/lib/actions/chat-actions';
-import { createChat, deleteChat, updateChatTitle } from './api';
+import { createChat, deleteChat, makeChatPublic, updateChatTitle,  } from './api';
 import { chatKeys } from './query-keys';
 import type { Chat, ChatWithMessages } from '@/lib/types/chat';
 
@@ -22,11 +22,11 @@ export function useCreateChat() {
         return [newChat, ...old];
       });
 
-      // Fixed: Add required `visibility` field
+      // Optimistically set chat detail query data with empty messages
+      // This prevents "Loading chat..." from showing when navigating to the new chat
       queryClient.setQueryData<ChatWithMessages>(chatKeys.detail(newChat.id), {
         ...newChat,
         messages: [],
-        visibility: 'private' as const, // or 'public' depending on your app logic
       });
     },
     onError: () => {
@@ -86,13 +86,10 @@ export function useUpdateChatTitleInCache() {
             title,
             createdAt: now,
             updatedAt: now,
-            userId: '', // or better: use current user ID if available
+            userId: '',
             messages: [],
-            visibility: 'private' as const, // ← THIS WAS MISSING
-            // pinned is optional, so it's fine if omitted
           };
         }
-
         return {
           ...oldData,
           title,
@@ -252,6 +249,22 @@ export function useTogglePinChat() {
     onSettled: (_data, _error, { chatId }) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+    },
+  });
+}
+
+export function useMakeChatPublic(chatId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => makeChatPublic(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
+      queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+      toast.success('Chat is now public, anyone can view this link');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to share chat');
     },
   });
 }

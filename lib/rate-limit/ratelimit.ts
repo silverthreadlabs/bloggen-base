@@ -56,7 +56,9 @@ function getRateLimiter(role: RateLimitRole): Ratelimit {
  * @param req - Optional Request object (for IP extraction)
  * @returns RateLimitResult with success status and remaining count
  */
-export async function checkRateLimit(): Promise<RateLimitResult> {
+export async function checkRateLimit(
+  req?: Request | any,
+): Promise<RateLimitResult> {
   try {
     // Check if Redis is configured
     if (
@@ -80,8 +82,11 @@ export async function checkRateLimit(): Promise<RateLimitResult> {
     // Get session and determine role
     const session = await getSession();
     const role = await determineUserRole(session);
-    const identifier = await getRateLimitIdentifier(role, session);
+    const identifier = await getRateLimitIdentifier(role, session, req);
     const key = getRateLimitKey(role, identifier);
+
+    // Debug log for rate limiting
+    console.log(`[RateLimit] Check: role=${role}, identifier=${identifier}, key=${key}`);
 
     // Get rate limiter for this role
     const ratelimit = getRateLimiter(role);

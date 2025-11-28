@@ -21,7 +21,7 @@ const tierVariants = cva(
 
 export interface SubscriptionTierLabelProps
   extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof tierVariants> {
+  VariantProps<typeof tierVariants> {
   tier?: 'free' | 'starter' | 'professional' | 'enterprise';
 }
 

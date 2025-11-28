@@ -1,10 +1,11 @@
 'use client';
-import { useState, useMemo, useRef, useLayoutEffect } from 'react';
+
+import { useState, useMemo } from 'react';
 import { Pin, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
@@ -38,55 +39,21 @@ export function PinnedSection({
   onPinChat,
   onTitleUpdate,
 }: PinnedSectionProps) {
-  const [pinnedExpanded, setPinnedExpanded] = useState(true); // default open like History
+  const [pinnedExpanded, setPinnedExpanded] = useState(true);
 
-  // Refs for dynamic line
-  const lineRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLDivElement>(null);
-  const listWrapperRef = useRef<HTMLDivElement>(null);
-
-  // Filter pinned chats based on search (optional, but consistent with History)
+  // Filter pinned chats based on search query
   const filteredPinnedChats = useMemo(() => {
     if (!searchQuery) return pinnedChats;
-    return pinnedChats.filter(chat =>
+    return pinnedChats.filter((chat) =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [pinnedChats, searchQuery]);
 
-  // Dynamic vertical line — exactly like HistorySection
-  useLayoutEffect(() => {
-    if (
-      !pinnedExpanded ||
-      !lineRef.current ||
-      !labelRef.current ||
-      !listWrapperRef.current
-    ) {
-      if (lineRef.current) lineRef.current.style.height = '0px';
-      return;
-    }
-
-    const updateLine = () => {
-      const labelBottom = labelRef.current!.getBoundingClientRect().bottom;
-      const listBottom = listWrapperRef.current!.getBoundingClientRect().bottom;
-      const height = listBottom - labelBottom - 12;
-      lineRef.current!.style.height = `${Math.max(0, height)}px`;
-    };
-
-    updateLine();
-    const observer = new ResizeObserver(updateLine);
-    observer.observe(listWrapperRef.current!);
-    window.addEventListener('resize', updateLine);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', updateLine);
-    };
-  }, [pinnedExpanded, filteredPinnedChats, searchQuery]);
-
+  // Loading state
   if (isLoading) {
     return (
       <SidebarGroup className="shrink-0">
-        <SidebarGroupLabel ref={labelRef}>
+        <SidebarGroupLabel>
           <div className="flex items-center gap-2">
             <Pin className="h-4 w-4" />
             <span>Pinned</span>
@@ -112,12 +79,10 @@ export function PinnedSection({
   }
 
   return (
-    <SidebarGroup className="flex flex-col relative">
-      {/* Collapsible Header */}
+    <SidebarGroup className="shrink-0">
       <SidebarGroupLabel
-        ref={labelRef}
-        onClick={() => setPinnedExpanded(v => !v)}
-        className="cursor-pointer flex items-center justify-between shrink-0"
+        onClick={() => setPinnedExpanded((v) => !v)}
+        className="cursor-pointer flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
           <Pin className="h-4 w-4" />
@@ -135,23 +100,18 @@ export function PinnedSection({
         )}
       </SidebarGroupLabel>
 
-      {/* Dynamic vertical line */}
-      {pinnedExpanded && filteredPinnedChats.length > 0 && (
-        <div
-          ref={lineRef}
-          className="absolute left-6 top-10 w-px bg-canvas-border z-0 pointer-events-none"
-          style={{ height: 0 }}
-        />
+      {/* Vertical line below history icon */}
+      {pinnedExpanded && (
+        <div className="absolute left-6 top-9 bottom-0 w-px bg-canvas-line z-0" />
       )}
 
-      {/* Content with smooth collapse */}
       <SidebarGroupContent
         className={cn(
-          'overflow-hidden transition-all duration-200',
+          'overflow-hidden transition-all duration-200 ease-in-out',
           pinnedExpanded ? 'opacity-100' : 'opacity-0 h-0'
         )}
       >
-        <div ref={listWrapperRef} className="ml-6">
+        <div className="ml-6">
           <SidebarMenu>
             {filteredPinnedChats.map((chat) => (
               <ChatItem

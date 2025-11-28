@@ -50,12 +50,9 @@ export function ChatHeader({
 
   const handleShare = async () => {
     if (!chatId) return;
-
-    // Make public first if needed
     if (!isPublic && onMakePublic) {
       await onMakePublic();
     }
-
     const url = window.location.href;
     navigator.clipboard.writeText(url);
     toast.success('Link copied to clipboard!');
@@ -63,7 +60,7 @@ export function ChatHeader({
 
 
   return (
-    <div className="flex items-center justify-between md:px-4 py-3 shrink-0 w-full">
+    <div className="flex items-center justify-between md:px-4 py-3 shrink-0 w-full gap-2">
       <div className="flex items-center gap-2 flex-1">
         {isMobile && <SidebarTrigger className="h-6 w-6" />}
         {isSessionPending || isLoadingChat ? (

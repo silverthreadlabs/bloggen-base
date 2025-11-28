@@ -15,7 +15,7 @@ export type Chat = {
 
 export type ChatWithMessages = Chat & {
   messages: UIMessage[];
-  visibility: 'public' | 'private';
+  visibility?: 'public' | 'private';
 };
 
 export type CreateMessagePayload = {

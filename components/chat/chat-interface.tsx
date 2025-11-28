@@ -29,10 +29,10 @@ import {
 } from '@/lib/hooks/chat/use-chat-pin';
 import { useFileUploads } from '@/lib/hooks/use-file-uploads';
 import { useMessageModifiers } from '@/lib/hooks/use-url-state';
-import { useMakeChatPublic } from '@/lib/hooks/chat/use-make-public';
 import type { ChatWithMessages } from '@/lib/types/chat';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
+import { useMakeChatPublic } from '@/lib/hooks/chat/use-chat-mutations';
 
 type Props = {
   chatId: string;
@@ -63,23 +63,17 @@ export function ChatInterface({
   const userContextRef = useRef('');
 
   const { data: session } = useSession();
+  const isGuestUser = !session?.user;
   const currentUserId = session?.user?.id;
-  const isGuestUser = !currentUserId;
 
   const { data: allChats } = useChats(!isGuestUser);
+  const { data: presentChat } = useChatQuery(isGuestUser ? undefined : chatId);
+  const chat = presentChat || initialChat;
 
-  // Fetch current chat data
-  const { data: currentChat } = useChatQuery(isGuestUser ? undefined : chatId);
-  const chat = currentChat || initialChat;
-
-  // Ownership & visibility
   const isOwner = currentUserId === chat?.userId;
   const isPublic = chat?.visibility === 'public';
   const isReadOnly = !isOwner;
-
-  // Make chat public
   const makePublic = useMakeChatPublic(chatId);
-
   const handleMakePublic = useCallback(async () => {
     if (isPublic || !isOwner || makePublic.isPending) return;
     try {
@@ -89,37 +83,69 @@ export function ChatInterface({
     }
   }, [isPublic, isOwner, makePublic]);
 
-  // Context handling
+  // Build full context from user context and current modifiers
   const buildFullContext = useCallback((userContext: string): string => {
     let fullContext = userContext;
+
+    // Add tone instructions with markers
     const toneModifier = getToneModifierWithMarkers(modifiersRef.current.tone);
-    if (toneModifier) fullContext = fullContext ? `${fullContext}${toneModifier}` : toneModifier.trim();
-    const lengthModifier = getLengthModifierWithMarkers(modifiersRef.current.length);
-    if (lengthModifier) fullContext = fullContext ? `${fullContext}${lengthModifier}` : lengthModifier.trim();
+    if (toneModifier) {
+      fullContext = fullContext
+        ? `${fullContext}${toneModifier}`
+        : toneModifier.trim();
+    }
+
+    // Add length instructions with markers
+    const lengthModifier = getLengthModifierWithMarkers(
+      modifiersRef.current.length,
+    );
+    if (lengthModifier) {
+      fullContext = fullContext
+        ? `${fullContext}${lengthModifier}`
+        : lengthModifier.trim();
+    }
+
     return fullContext;
   }, []);
 
+  // Extract user context by removing modifier sections using markers
   const extractUserContext = useCallback((fullContext: string): string => {
     let extracted = fullContext;
-    let idx = extracted.indexOf(TONE_MARKER_START);
-    while (idx !== -1) {
-      const end = extracted.indexOf(TONE_MARKER_END, idx);
-      if (end !== -1) {
-        extracted = extracted.substring(0, idx) + extracted.substring(end + TONE_MARKER_END.length);
-        idx = extracted.indexOf(TONE_MARKER_START);
-      } else break;
+
+    // Remove tone modifier section using indexOf (more reliable than regex)
+    let toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+    while (toneStartIdx !== -1) {
+      const toneEndIdx = extracted.indexOf(TONE_MARKER_END, toneStartIdx);
+      if (toneEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted =
+          extracted.substring(0, toneStartIdx) +
+          extracted.substring(toneEndIdx + TONE_MARKER_END.length);
+        toneStartIdx = extracted.indexOf(TONE_MARKER_START);
+      } else {
+        break;
+      }
     }
-    idx = extracted.indexOf(LENGTH_MARKER_START);
-    while (idx !== -1) {
-      const end = extracted.indexOf(LENGTH_MARKER_END, idx);
-      if (end !== -1) {
-        extracted = extracted.substring(0, idx) + extracted.substring(end + LENGTH_MARKER_END.length);
-        idx = extracted.indexOf(LENGTH_MARKER_START);
-      } else break;
+
+    // Remove length modifier section using indexOf
+    let lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+    while (lengthStartIdx !== -1) {
+      const lengthEndIdx = extracted.indexOf(LENGTH_MARKER_END, lengthStartIdx);
+      if (lengthEndIdx !== -1) {
+        // Remove everything from start marker to end marker (inclusive)
+        extracted =
+          extracted.substring(0, lengthStartIdx) +
+          extracted.substring(lengthEndIdx + LENGTH_MARKER_END.length);
+        lengthStartIdx = extracted.indexOf(LENGTH_MARKER_START);
+      } else {
+        break;
+      }
     }
+
     return extracted.trim();
   }, []);
 
+  // Wrapper for setContext that updates userContextRef
   const handleContextChange = useCallback(
     (newContext: string) => {
       const userPart = extractUserContext(newContext);
@@ -129,15 +155,18 @@ export function ChatInterface({
     [extractUserContext],
   );
 
+  // Wrapper for setModifiers that rebuilds context
   const handleModifiersChange = useCallback(
     (newModifiers: typeof modifiers) => {
       setModifiers(newModifiers);
       modifiersRef.current = newModifiers;
-      setContext(buildFullContext(userContextRef.current));
+      const fullContext = buildFullContext(userContextRef.current);
+      setContext(fullContext);
     },
     [setModifiers, buildFullContext],
   );
 
+  // Individual setters for tone and length
   const handleToneChange = useCallback(
     (tone: typeof modifiers.tone) => {
       handleModifiersChange({ tone, length: modifiersRef.current.length });
@@ -152,16 +181,24 @@ export function ChatInterface({
     [handleModifiersChange],
   );
 
+  // Fetch current chat data to get updated title
+  const { data: currentChat } = useChatQuery(isGuestUser ? undefined : chatId);
+
   const chatOps = useChatOperations(chatId);
   const messageOps = useMessageOperations(chatId);
   const togglePin = useToggleChatPin();
   const pinned = useChatPinStatus(isGuestUser ? undefined : chatId);
   const updateChatTitleInCache = useUpdateChatTitleInCache();
 
+  // File uploads hook - uploads immediately on file selection
   const fileUploads = useFileUploads({
     chatId,
-    onUploadComplete: (fileId, file) => console.log('[Chat] File uploaded:', file.name, fileId),
-    onUploadError: (error, file) => console.error('[Chat] File upload failed:', file.name, error),
+    onUploadComplete: (fileId, file) => {
+      console.log('[Chat] File uploaded:', file.name, fileId);
+    },
+    onUploadError: (error, file) => {
+      console.error('[Chat] File upload failed:', file.name, error);
+    },
   });
 
   const {
@@ -176,35 +213,62 @@ export function ChatInterface({
     generateId: generateUUID,
     onFinish: async (result) => {
       if (isGuestUser) return;
+      // Save the assistant message with the correct client-generated ID
       const assistantMessage = result.message;
+
+      // Track this save as pending
       pendingSavesRef.current.add(assistantMessage.id);
 
-      const metadata = result.message.metadata as any;
+      // Get metadata for title updates
+      const metadata = result.message.metadata as
+        | {
+          chatId?: string;
+          chatTitle?: string;
+          isNewChat?: boolean;
+        }
+        | undefined;
 
+      // Handle URL update for first message
       if (isFirstMessageRef.current) {
         window.history.replaceState({}, '', `/chat/${chatId}`);
         isFirstMessageRef.current = false;
-        if (metadata?.chatTitle) updateChatTitleInCache(chatId, metadata.chatTitle);
+
+        if (metadata?.chatTitle) {
+          // Update cache with new title instantly
+          updateChatTitleInCache(chatId, metadata.chatTitle);
+        }
       }
 
+      // Skip saving for guest users
       if (!isGuestUser) {
         try {
           await messageOps.saveMessage(
-            { role: 'assistant', parts: assistantMessage.parts },
-            assistantMessage.id,
+            {
+              role: 'assistant',
+              parts: assistantMessage.parts,
+            },
+            assistantMessage.id, // Use the client-generated ID
           );
-          queryClient.invalidateQueries({ queryKey: chatKeys.detail(chatId) });
+
+          // Invalidate immediately after save to refresh messages from DB
+          queryClient.invalidateQueries({
+            queryKey: chatKeys.detail(chatId),
+          });
         } catch (error) {
-          console.error('Failed to save message:', error);
+          // Error saving message
         } finally {
+          // Remove from pending saves
           pendingSavesRef.current.delete(assistantMessage.id);
         }
       } else {
+        // For guest users, just remove from pending saves
         pendingSavesRef.current.delete(assistantMessage.id);
       }
     },
   });
 
+  // Initialize messages from server data on mount (for existing chats)
+  // Use queueMicrotask to defer setState and avoid the "setState during render" warning
   if (
     !messagesInitializedRef.current &&
     messages.length === 0 &&
@@ -218,18 +282,17 @@ export function ChatInterface({
   }
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  // Buttons are disabled while loading/streaming, and message is saved before streaming ends
   const isProcessing = isLoading;
 
   const handleSubmit = useCallback(
     async (message: PromptInputMessage) => {
-      if (isReadOnly) {
-        toast.error('You cannot send messages in a public shared chat');
-        return;
-      }
+      // Check if any files are still uploading
       if (fileUploads.isAnyUploading()) {
         toast.error('Please wait for files to finish uploading');
         return;
       }
+
       if (!message.text?.trim() || isProcessing) return;
 
       const contextWithMarkers = message.context || '';
@@ -241,26 +304,43 @@ export function ChatInterface({
         .trim();
 
       const messageParts: any[] = [{ type: 'text', text: message.text }];
+
+      // Get uploaded file IDs and details from the upload hook
       const fileIds = fileUploads.getUploadedFileIds();
       const uploadedFiles = fileUploads.getUploadedFiles();
 
+      // Add file attachments to message parts for optimistic UI
       for (const file of uploadedFiles) {
         if (file.type.startsWith('image/')) {
-          messageParts.push({ type: 'image', image: file.url });
+          messageParts.push({
+            type: 'image',
+            image: file.url,
+          });
         } else {
-          messageParts.push({ type: 'file', data: file.url, mimeType: file.type });
+          messageParts.push({
+            type: 'file',
+            data: file.url,
+            mimeType: file.type,
+          });
         }
       }
 
+      // Clear input immediately for better UX
       setText('');
       setContext('');
       setImageUrl('');
       fileUploads.clearAll();
 
+      // Add image URL if provided
       if (message.imageUrl?.trim()) {
-        messageParts.push({ type: 'image', image: message.imageUrl.trim() });
+        messageParts.push({
+          type: 'image',
+          image: message.imageUrl.trim(),
+        });
       }
 
+      // Send message with file IDs in metadata for backend processing
+      // The parts above will ensure optimistic UI shows the attachments
       sendMessage(
         {
           parts: messageParts,
@@ -269,111 +349,246 @@ export function ChatInterface({
             ...(fileIds.length > 0 ? { fileIds } : {}),
           },
         } as any,
-        { body: { context: cleanContext || undefined } },
+        {
+          body: {
+            context: cleanContext || undefined,
+          },
+        },
       );
     },
-    [sendMessage, isProcessing, fileUploads, isReadOnly],
+    [sendMessage, isProcessing, fileUploads, setText, setContext, setImageUrl],
   );
 
   const handleSuggestionClick = useCallback(
     (suggestion: string) => {
-      if (isProcessing || isReadOnly) return;
+      if (isProcessing) return;
       sendMessage({ text: suggestion });
     },
-    [sendMessage, isProcessing, isReadOnly],
+    [sendMessage, isProcessing],
   );
 
   const handleDelete = useCallback(
     (messageId: string) => {
-      if (isReadOnly) return;
-      if (!isGuestUser) messageOps.deleteMessage(messageId);
+      if (!isGuestUser) {
+        messageOps.deleteMessage(messageId);
+      }
       setMessages(messages.filter((m) => m.id !== messageId));
     },
-    [messageOps, messages, setMessages, isGuestUser, isReadOnly],
+    [messageOps, messages, setMessages, isGuestUser],
   );
 
   const handleEdit = useCallback(
     async (messageId: string, newContent: string) => {
-      if (isReadOnly || isGuestUser) return;
-      // Your existing edit logic here (unchanged)
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1 || messages[messageIndex].role !== 'user') return;
+      if (isGuestUser) {
+        toast.error('Editing messages is not available for guest users');
+        return;
+      }
 
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) return;
+
+      const editedMessage = messages[messageIndex];
+      if (editedMessage.role !== 'user') return;
+
+      // Update the message in the database
       const newParts = [{ type: 'text' as const, text: newContent }];
       messageOps.updateMessage(messageId, newParts);
+
+      // Update local messages state with properly typed parts
       const updatedMessages = messages.map((m) =>
-        m.id === messageId ? { ...m, parts: newParts } : m,
+        m.id === messageId
+          ? {
+            ...m,
+            parts: newParts,
+          }
+          : m,
       );
 
+      // Find the next assistant message after the edited user message
       const nextAssistantIndex = updatedMessages.findIndex(
         (m, idx) => idx > messageIndex && m.role === 'assistant',
       );
 
+      // If there's an assistant message after the edited user message, regenerate it
       if (nextAssistantIndex !== -1) {
-        const assistantId = updatedMessages[nextAssistantIndex].id;
-        messageOps.regenerateMessage(assistantId, () => deleteTrailingMessages({ id: assistantId }));
-        setMessages(updatedMessages.slice(0, messageIndex + 1));
-        aiRegenerate({ messageId, body: { context: (messages[messageIndex].metadata as any)?.context } });
-        toast.success('Regenerating response...');
+        const assistantMessageId = updatedMessages[nextAssistantIndex].id;
+
+        try {
+          // Delete trailing messages (the assistant message and any after it)
+          messageOps.regenerateMessage(assistantMessageId, () =>
+            deleteTrailingMessages({ id: assistantMessageId }),
+          );
+
+          // Create the messages array up to and including the edited message
+          const messagesUpToEdit = [
+            ...messages.slice(0, messageIndex),
+            {
+              ...messages[messageIndex],
+              content: newContent,
+              parts: [{ type: 'text' as const, text: newContent }],
+            },
+          ];
+
+          // Remove the assistant message and all messages after it from local state
+          setMessages(messagesUpToEdit);
+
+          // Extract context from the original message metadata (preserve it after edit)
+          const messageContext = (
+            messages[messageIndex].metadata as { context?: string } | undefined
+          )?.context;
+
+          // Regenerate using the edited user message ID
+          aiRegenerate({
+            messageId: messageId, // This is already the user message ID
+            body: {
+              context: messageContext, // Pass context for regeneration
+            },
+          });
+
+          toast.success('Regenerating response with edited message...');
+        } catch (error) {
+          console.error('Error regenerating after edit:', error);
+          toast.error('Failed to regenerate response');
+          // Still update the messages even if regeneration fails
+          setMessages(updatedMessages);
+        }
       } else {
+        // No assistant message to regenerate, just update the message
         setMessages(updatedMessages);
       }
     },
-    [messageOps, messages, setMessages, aiRegenerate, isGuestUser, isReadOnly],
+    [messageOps, messages, setMessages, sendMessage, isGuestUser],
   );
 
   const handleRegenerate = useCallback(
     async (messageId: string) => {
-      if (isReadOnly || isGuestUser) return;
-      // Your existing regenerate logic (safe to keep)
+      if (isGuestUser) {
+        toast.error('Regenerating messages is not available for guest users');
+        return;
+      }
+
+      console.log('[handleRegenerate] Called with messageId:', messageId);
+
+      // Wait for any pending saves on this message
+      if (pendingSavesRef.current.has(messageId)) {
+        const startTime = Date.now();
+        const maxWait = 5000; // 5 seconds max
+
+        while (pendingSavesRef.current.has(messageId)) {
+          if (Date.now() - startTime > maxWait) {
+            toast.error('Please wait for the message to finish saving');
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
       const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1 || messages[messageIndex].role !== 'assistant') return;
 
-      const userMessage = messages.slice(0, messageIndex).reverse().find((m) => m.role === 'user');
-      if (!userMessage) return;
+      if (messageIndex === -1 || messages[messageIndex].role !== 'assistant') {
+        return;
+      }
 
-      messageOps.regenerateMessage(messageId, () => deleteTrailingMessages({ id: messageId }));
-      setMessages(messages.slice(0, messageIndex));
-      aiRegenerate({
-        messageId: userMessage.id,
-        body: { context: (userMessage.metadata as any)?.context },
-      });
-      toast.success('Regenerating response...');
+      try {
+        messageOps.regenerateMessage(messageId, () =>
+          deleteTrailingMessages({ id: messageId }),
+        );
+
+        // Find the last user message before this assistant message
+        const userMessage = messages
+          .slice(0, messageIndex)
+          .reverse()
+          .find((m) => m.role === 'user');
+
+        if (!userMessage) {
+          toast.error('No user message found to regenerate from');
+          return;
+        }
+
+        // Remove the assistant message and all messages after it
+        setMessages(messages.slice(0, messageIndex));
+
+        // Extract context from the user message metadata
+        const userContext = (
+          userMessage.metadata as { context?: string } | undefined
+        )?.context;
+
+        // Regenerate using the user message ID (the message before the assistant message)
+        aiRegenerate({
+          messageId: userMessage.id,
+          body: {
+            context: userContext, // Pass context for regeneration
+          },
+        });
+
+        toast.success('Regenerating response...');
+      } catch (error) {
+        console.error('Error regenerating:', error);
+        toast.error('Failed to regenerate');
+      }
     },
-    [messages, setMessages, messageOps, aiRegenerate, isGuestUser, isReadOnly],
+    [messages, setMessages, sendMessage, messageOps, isGuestUser],
   );
 
   const handleDeleteChat = useCallback(async () => {
-    if (isReadOnly || isGuestUser) return;
-    // Your existing delete logic (unchanged)
-    let nextChatId: string | undefined;
-    if (allChats && allChats.length > 0) {
-      const idx = allChats.findIndex((c) => c.id === chatId);
-      if (idx !== -1) {
-        nextChatId = allChats[idx + 1]?.id || allChats[idx - 1]?.id;
-      }
+    if (isGuestUser) {
+      toast.error('This feature is not available for guest users');
+      return;
     }
-    await chatOps.deleteChat();
-    window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
-    toast.success('Chat deleted');
-  }, [chatOps, allChats, chatId, isGuestUser, isReadOnly]);
+
+    try {
+      // Find the next chat to navigate to before deleting
+      let nextChatId: string | undefined;
+      if (allChats && allChats.length > 0) {
+        const currentIndex = allChats.findIndex((chat) => chat.id === chatId);
+        if (currentIndex !== -1) {
+          // Try to find next chat (after current)
+          if (currentIndex < allChats.length - 1) {
+            nextChatId = allChats[currentIndex + 1].id;
+          }
+          // Otherwise try previous chat (before current)
+          else if (currentIndex > 0) {
+            nextChatId = allChats[currentIndex - 1].id;
+          }
+        }
+      }
+
+      await chatOps.deleteChat();
+
+      // Navigate to next available chat, otherwise to /chat
+      window.location.href = nextChatId ? `/chat/${nextChatId}` : '/chat';
+
+      toast.success('Chat deleted');
+    } catch (error) {
+      toast.error('Failed to delete chat');
+    }
+  }, [chatOps, allChats, chatId, isGuestUser]);
 
   const handleTogglePin = useCallback(() => {
-    if (isReadOnly || isGuestUser) return;
+    if (isGuestUser) {
+      toast.error('This feature is not available for guest users');
+      return;
+    }
+
     togglePin(chatId, !pinned);
-  }, [chatId, pinned, togglePin, isGuestUser, isReadOnly]);
+    // toast.success(pinned ? 'Chat unpinned' : 'Chat pinned');
+  }, [chatId, pinned, togglePin, isGuestUser]);
 
   const handleUpdateTitle = useCallback(
     async (newTitle: string) => {
-      if (isReadOnly || isGuestUser) return;
+      if (isGuestUser) {
+        toast.error('This feature is not available for guest users');
+        return;
+      }
+
       try {
         await chatOps.updateTitle(newTitle);
         toast.success('Title updated');
-      } catch {
+      } catch (error) {
         toast.error('Failed to update title');
       }
     },
-    [chatOps, isGuestUser, isReadOnly],
+    [chatOps, isGuestUser],
   );
 
   const handleNewChat = useCallback(() => {
@@ -416,7 +631,6 @@ export function ChatInterface({
       onNewChat={handleNewChat}
       onUpdateTitle={handleUpdateTitle}
       onStop={stop}
-      // NEW SHARING PROPS
       isPublic={isPublic}
       isReadOnly={isReadOnly}
       onMakePublic={handleMakePublic}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   getAuthenticatedUserFromRequest,
+  getOptionalUserFromRequest,
   handleApiError,
   parseRouteParams,
   validateRequired,
@@ -10,8 +11,8 @@ import {
   dbMessagesToUIMessages,
   deleteChat,
   getMessagesByChatId,
+  getSharedChatById,
   updateChatTitle,
-  getChatById
 } from '@/lib/db/chat-queries';
 
 type RouteContext = {
@@ -21,20 +22,14 @@ type RouteContext = {
 // GET /api/chats/[id] - Get chat with messages
 export async function GET(req: Request, context: RouteContext) {
   try {
+    // Use optional auth (null if no session)
+    const user = await getOptionalUserFromRequest(req);
+    const userId = user?.id ?? undefined;
+
     const { id } = await parseRouteParams(context.params);
 
-    // Try to get session (may be null for public access)
-    let userId: string | undefined;
-    try {
-      const user = await getAuthenticatedUserFromRequest(req);
-      userId = user.id;
-    } catch (error) {
-      // Not authenticated → that's OK for public chats
-      userId = undefined;
-    }
-
-    // This function allows public + owner access
-    const chat = await getChatById(id, userId);
+    // Allows public chats even if userId=undefined
+    const chat = await getSharedChatById(id, userId);
 
     if (!chat) {
       return NextResponse.json(

@@ -24,6 +24,16 @@ export async function getAuthenticatedUserFromRequest(req: Request) {
 }
 
 /**
+ * Get optional user from request (returns null if not authenticated)
+ */
+export async function getOptionalUserFromRequest(req: Request) {
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
+  return session?.user ?? null;
+}
+
+/**
  * Verify user owns the chat
  * @throws ChatSDKError if chat not found or forbidden
  */

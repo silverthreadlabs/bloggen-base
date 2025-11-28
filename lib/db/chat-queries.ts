@@ -54,19 +54,11 @@ export async function createChat(
   return newChat;
 }
 
-export async function getChatById(chatId: string, userId?: string) {
+export async function getChatById(chatId: string) {
   const [chatData] = await db
     .select()
     .from(chat)
-    .where(
-      and(
-        eq(chat.id, chatId),
-        or(
-          eq(chat.visibility, 'public'),
-          userId ? eq(chat.userId, userId) : sql`false`
-        )
-      )
-    )
+    .where(eq(chat.id, chatId))
     .limit(1);
 
   return chatData;
@@ -130,6 +122,25 @@ export async function makeChatPublic(chatId: string, userId: string) {
 
   return updated;
 }
+
+export async function getSharedChatById(chatId: string, userId?: string) {
+  const [chatData] = await db
+    .select()
+    .from(chat)
+    .where(
+      and(
+        eq(chat.id, chatId),
+        or(
+          eq(chat.visibility, 'public'),
+          userId ? eq(chat.userId, userId) : sql`false`
+        )
+      )
+    )
+    .limit(1);
+
+  return chatData;
+}
+
 
 // ============================================================================
 // MESSAGE OPERATIONS

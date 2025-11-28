@@ -49,7 +49,7 @@ const buttonVariants = cva(
           'bg-alert-solid text-alert-on-alert hover:bg-alert-solid-hover ',
       },
       size: {
-        sm: 'px-3 h-8 text-sm',
+        sm: 'pl-3 pr-2 h-8 text-sm',
         default: 'px-6 h-10 text-base',
         lg: 'px-8 h-14 text-lg',
       },

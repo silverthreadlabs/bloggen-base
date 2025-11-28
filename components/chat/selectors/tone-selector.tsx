@@ -19,7 +19,7 @@ type Props = {
 export function ToneSelector({ value, onChange, disabled = false }: Props) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="h-8 w-auto text-xs">
+      <SelectTrigger className="h-8 w-[130px] text-xs">
         <div className="flex items-center gap-1.5">
           <SparklesIcon size={14} className="text-muted-foreground" />
           <SelectValue placeholder="Tone" />

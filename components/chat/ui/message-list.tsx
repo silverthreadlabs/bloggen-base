@@ -7,6 +7,7 @@ import { Action, Actions } from '@/components/ai-elements/actions';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import { Response } from '@/components/ai-elements/response';
 import { useChatActions } from '@/lib/hooks/chat';
+// import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from '../utils/message-utils';
 import { FileAttachmentsGrid } from './file-attachment-display';
 import { cn } from '@/lib/utils';
@@ -16,28 +17,27 @@ type Props = {
   messages: UIMessage[];
   isLoading: boolean;
   isProcessing?: boolean;
+  isReadOnly?: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onRegenerate: (messageId: string) => void;
-  // NEW: Hide actions for non-owners
-  isReadOnly?: boolean;
+
 };
 
 export function MessageList({
   messages,
   isLoading,
   isProcessing = false,
+  isReadOnly = false,
   onDelete,
   onEdit,
   onRegenerate,
-  isReadOnly = false,
 }: Props) {
   const { copiedId, handleCopy } = useChatActions();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
 
   const handleStartEdit = (messageId: string, content: string) => {
-    if (isReadOnly) return;
     setEditingId(messageId);
     setEditText(content);
   };
@@ -63,13 +63,16 @@ export function MessageList({
           .map((part) => (part.type === 'text' ? part.text : ''))
           .join('');
 
+        // Extract file attachments from message parts
         const fileAttachments = (message.parts || [])
           .filter((part) => {
             const anyPart = part as any;
+            // Handle both regular file parts and data-file parts
             return (part.type === 'file' || part.type === 'data-file') && (anyPart.data || anyPart.url || anyPart.__uploading);
           })
           .map((part) => {
             const anyPart = part as any;
+            // For data-file parts (from AI SDK conversion)
             if (part.type === 'data-file' && anyPart.data) {
               return {
                 type: 'file' as const,
@@ -78,6 +81,7 @@ export function MessageList({
                 filename: anyPart.data.filename || anyPart.filename || 'Attachment',
               } as FileUIPart;
             }
+            // For uploading files (preview state)
             if (anyPart.__uploading) {
               return {
                 type: 'file' as const,
@@ -88,6 +92,7 @@ export function MessageList({
                 __file: anyPart.__file,
               } as any;
             }
+            // For regular file parts
             return {
               type: 'file' as const,
               url: anyPart.url || anyPart.data,
@@ -96,13 +101,21 @@ export function MessageList({
             } as FileUIPart;
           });
 
-        const isLastAssistant = isLastAssistantMessage(message, index, messages, isLoading);
+        const isLastAssistant = isLastAssistantMessage(
+          message,
+          index,
+          messages,
+          isLoading,
+        );
+
         const isEditing = editingId === message.id;
-        const messageContext = (message.metadata as { context?: string } | undefined)?.context;
+        const messageContext = (
+          message.metadata as { context?: string } | undefined
+        )?.context;
 
         return (
           <Message key={message.id} from={message.role}>
-            <div className={cn('flex flex-col', message.role === 'user' ? 'items-end' : 'items-start')}>
+            <div className={cn('flex flex-col', message.role === 'user' ? 'items-end' : 'items-start')} >
               <MessageContent>
                 {isEditing ? (
                   <div className="space-y-2">
@@ -147,16 +160,20 @@ export function MessageList({
                       </div>
                     )}
 
+                    {/* Display file attachments */}
                     {fileAttachments.length > 0 && (
                       <div className="mb-3">
                         <FileAttachmentsGrid files={fileAttachments} />
                       </div>
                     )}
 
+                    {/* Display images from message parts */}
                     {(message.parts || [])
                       .filter((part) => {
+                        // Support both 'image' type and 'data-image' type
                         const anyPart = part as any;
                         const imageUrl = anyPart.image || anyPart.data?.url;
+                        // Validate it's a valid HTTPS URL
                         if (!imageUrl || typeof imageUrl !== 'string') return false;
                         try {
                           const url = new URL(imageUrl);
@@ -170,6 +187,7 @@ export function MessageList({
                         const imageUrl = anyPart.image || anyPart.data?.url;
                         return (
                           <div key={idx} className="mb-3 relative w-full max-w-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={imageUrl}
                               alt="User provided content"
@@ -186,10 +204,8 @@ export function MessageList({
                 )}
               </MessageContent>
 
-              {/* Actions: Only show if NOT read-only */}
-              {!isEditing && !isReadOnly && (
+              {!isEditing && (
                 <Actions className="mt-2">
-                  {/* Copy is always allowed */}
                   <Action
                     tooltip="Copy"
                     onClick={() => handleCopy(message.id, messageText)}
@@ -201,7 +217,6 @@ export function MessageList({
                     )}
                   </Action>
 
-                  {/* Regenerate only for assistant messages */}
                   {message.role === 'assistant' && (
                     <Action
                       tooltip="Regenerate"
@@ -212,19 +227,27 @@ export function MessageList({
                     </Action>
                   )}
 
-                  {/* Edit only for user messages */}
                   {message.role === 'user' && (
-                    <Action
-                      tooltip="Edit"
-                      onClick={() => handleStartEdit(message.id, messageText)}
-                      disabled={isProcessing}
-                    >
-                      <PencilIcon className="size-3" />
-                    </Action>
+                    <>
+                      <Action
+                        tooltip="Edit"
+                        onClick={() => handleStartEdit(message.id, messageText)}
+                        disabled={isProcessing}
+                      >
+                        <PencilIcon className="size-3" />
+                      </Action>
+                      {/* <Action
+                        tooltip="Delete"
+                        onClick={() => onDelete(message.id)}
+                      >
+                        <Trash2Icon className="size-3" />
+                      </Action> */}
+                    </>
                   )}
                 </Actions>
               )}
             </div>
+            {/* <MessageAvatar role={message.role as 'user' | 'assistant'} /> */}
           </Message>
         );
       })}
