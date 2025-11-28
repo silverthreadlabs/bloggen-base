@@ -70,9 +70,10 @@ export function ChatInterface({
   const { data: presentChat } = useChatQuery(isGuestUser ? undefined : chatId);
   const chat = presentChat || initialChat;
 
-  const isOwner = currentUserId === chat?.userId;
-  const isPublic = chat?.visibility === 'public';
-  const isReadOnly = !isOwner;
+  const hasChat = !!chat;
+  const isOwner = hasChat ? currentUserId === chat?.userId : true;
+  const isPublic = hasChat ? chat?.visibility === 'public' : false;
+  const isReadOnly = hasChat && !isOwner;
   const makePublic = useMakeChatPublic(chatId);
   const handleMakePublic = useCallback(async () => {
     if (isPublic || !isOwner || makePublic.isPending) return;

@@ -44,8 +44,6 @@ type Props = {
   chatId?: string;
   pinned?: boolean;
   isGuestUser?: boolean;
-
-  // NEW: Sharing props
   isPublic?: boolean;
   isReadOnly?: boolean;
   onMakePublic?: () => Promise<void>;
@@ -165,8 +163,8 @@ export function ChatView({
         <ConversationScrollButton />
       </Conversation>
 
-      {!isReadOnly || isNewChat ? (
-        <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg ">
+      {!isReadOnly ? (
+        <div className="bg-canvas-bg grid shrink-0 gap-4 border-t lg:mx-auto mx-2 lg:w-full lg:max-w-4xl px-4 rounded-lg">
           <ChatInput
             text={text}
             context={context}
@@ -186,13 +184,18 @@ export function ChatView({
             fileUploads={fileUploads}
             onSubmitAction={onSubmit}
             onStopAction={onStop}
-            disabled={isLoadingChat}
+            disabled={isLoadingChat || isProcessing}
           />
         </div>
       ) : (
-        <div className="border-t bg-muted/50 p-6 text-center text-sm text-muted-foreground">
-          <Globe className="inline-block w-4 h-4 mr-2" />
-          This is a public shared chat read-only
+        <div className="border-t bg-muted/50 p-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+          <Globe className="w-4 h-4" />
+          This is a public shared chat — read only
+          {isPublic && onMakePublic && (
+            <Badge variant="secondary" className="ml-2">
+              Shared
+            </Badge>
+          )}
         </div>
       )}
     </div>
