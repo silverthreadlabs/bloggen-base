@@ -308,8 +308,8 @@ export function dbMessagesToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
 // CHAT TITLE GENERATION
 // ============================================================================
 
-export function generateChatTitle(firstUserMessage: string): string {
-  // Take first 50 characters or first sentence
-  const title = firstUserMessage.slice(0, 50);
-  return title.length < firstUserMessage.length ? `${title}...` : title;
-}
+// export function generateChatTitle(firstUserMessage: string): string {
+//   // Take first 50 characters or first sentence
+//   const title = firstUserMessage.slice(0, 50);
+//   return title.length < firstUserMessage.length ? `${title}...` : title;
+// }

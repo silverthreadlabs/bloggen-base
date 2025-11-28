@@ -11,7 +11,6 @@ import {
     PromptInputAttachment,
     PromptInputAttachments,
     PromptInputBody,
-    PromptInputButton,
     PromptInputFooter,
     PromptInputHeader,
     type PromptInputMessage,
@@ -21,12 +20,9 @@ import {
     PromptInputTools
 } from '@/chat/components/ai-elements/prompt-input';
 import type { useFileUploads } from '@/chat/hooks/use-file-uploads';
-import { getFileInputAccept } from '@/chat/utils/file-types';
-import { validateFile } from '@/chat/utils/file-upload';
-import { LengthOption, ToneOption } from '@/chat/utils/message-modifiers';
+import { type LengthOption, type ToneOption, validateFile, FileTypes } from '@/chat/utils';
 
 import { LengthSelector, ToneSelector } from '../selectors';
-import { GlobeIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MAX_FILES = 2;
@@ -106,7 +102,7 @@ export function ChatInput({
         <PromptInput
             globalDrop
             multiple
-            accept={getFileInputAccept()}
+            accept={FileTypes.getFileInputAccept()}
             maxFiles={MAX_FILES}
             maxFileSize={5 * 1024 * 1024} // 5MB
             onError={(error) => {

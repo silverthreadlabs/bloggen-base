@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { DEFAULT_LENGTH, DEFAULT_TONE, LengthOption, ToneOption } from '@/chat/utils/message-modifiers';
+import { DEFAULT_LENGTH, DEFAULT_TONE, type LengthOption, type ToneOption } from '@/chat/utils';
 
 /**
  * Combined chat message modifiers (tone and length)

@@ -7,7 +7,7 @@ import type { File as DBFile } from '@/lib/db/schema';
 import { PromptInputActionMenuItem } from '@/chat/components/ai-elements/prompt-input';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { getAllowedExtensions, isMimeTypeAllowed } from '@/chat/utils/file-types';
+import { FileTypes } from '@/chat/utils';
 
 export type FileAttachment = DBFile & {
   id: string;
@@ -107,8 +107,8 @@ export function useFileUploads(): UseFileUploadsReturn {
     //   'image/heif', // .heif
     // ];
 
-    if (!isMimeTypeAllowed(fileToUpload.type)) {
-      const allowedExts = getAllowedExtensions().map(ext => `.${ext}`).join(', ');
+    if (!FileTypes.isMimeTypeAllowed(fileToUpload.type)) {
+      const allowedExts = FileTypes.getAllowedExtensions().map(ext => `.${ext}`).join(', ');
       toast.error(`File type not supported. Allowed: ${allowedExts}`);
       return;
     }

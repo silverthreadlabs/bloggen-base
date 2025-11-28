@@ -10,3 +10,7 @@ export {
   validateRequired,
   verifyChatOwnership,
 } from './utils';
+
+export { processMessages, addContextToLastMessage, cleanMessages } from './message-processing';
+
+export { generateChatTitle } from './generate-chat-title';

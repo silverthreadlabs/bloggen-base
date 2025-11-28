@@ -1,3 +1,4 @@
+
 import { openai } from '@ai-sdk/openai';
 import { streamText, type UIMessage } from 'ai';
 import { NextRequest } from 'next/server';
@@ -5,7 +6,7 @@ import {
   getAuthenticatedUserFromRequest,
   handleApiError,
 } from '@/chat/lib/api/utils';
-import { getSystemPrompt } from '@/lib/config/prompts';
+import { getSystemPrompt } from '@/chat/lib/config/prompts';
 import {
   createChat,
   getChatById,
@@ -14,13 +15,10 @@ import {
 } from '@/lib/db/chat-queries';
 import { linkFilesToMessage, getFileById } from '@/lib/db/file-queries';
 import { checkRateLimit, getRateLimitConfig } from '@/chat/lib/rate-limit';
-import { generateChatTitle } from '@/lib/utils/generate-chat-title';
-import {
-  processMessages,
-  addContextToLastMessage,
-  cleanMessages,
-  convertMessagesToModelFormat,
-} from '@/chat/lib/utils';
+import { convertMessagesToModelFormat } from '@/chat/utils';
+import { processMessages, addContextToLastMessage, cleanMessages } from '@/chat/lib/api';
+import { generateChatTitle } from '@/chat/lib/api';
+
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;

@@ -8,7 +8,7 @@ import {
 import { Loader } from '@/chat/components/ai-elements/loader';
 import type { PromptInputMessage } from '@/chat/components/ai-elements/prompt-input';
 import type { useFileUploads } from '@/chat/hooks/use-file-uploads';
-import { LengthOption, ToneOption } from '@/chat/utils/message-modifiers';
+import { LengthOption, ToneOption } from '@/chat/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { UIMessage } from '@ai-sdk/react';
 

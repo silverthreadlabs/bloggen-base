@@ -5,7 +5,7 @@
 
 import type { UIMessage } from 'ai';
 import { getFileById } from '@/lib/db/file-queries';
-import { processFiles, type FileMetadata } from './file-processing';
+import { processFiles, type FileMetadata } from '../../utils/file-processing';
 
 /**
  * Extract file metadata from message

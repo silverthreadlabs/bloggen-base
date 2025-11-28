@@ -7,7 +7,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq } from 'drizzle-orm';
 import { file as fileSchema } from '@/lib/db/schema';
-import { isMimeTypeAllowed } from '@/chat/utils/file-types';
+import { FileTypes } from '@/chat/utils';
 // Database setup
 const client = postgres(process.env.DB_CONNECTION_STRING!);
 const db = drizzle(client);
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     //   'image/heif', // .heif
     // ];
 
-    if (!isMimeTypeAllowed(uploadedFile.type)) {
+    if (!FileTypes.isMimeTypeAllowed(uploadedFile.type)) {
       return NextResponse.json(
         { error: 'File type not supported' },
         { status: 400 }
