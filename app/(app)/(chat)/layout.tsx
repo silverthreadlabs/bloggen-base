@@ -4,7 +4,7 @@ import { ChatLayoutClient } from '@/components/chat/chat-layout-client';
 import { auth } from '@/lib/auth/auth';
 import type { BetterAuthSession } from '@/lib/auth/auth-types';
 import '../../global.css';
-
+import {Chat, ChatComponents} from "../../../chat";
 export default async function ChatLayout({
   children,
 }: {
@@ -14,8 +14,11 @@ export default async function ChatLayout({
     .getSession({ headers: await headers() })
     .catch(() => null);
 
+  /**
+   * 
+   */
+  //	=======================================================================
   const sessionData = session as unknown as BetterAuthSession;
-
   // if (!sessionData || sessionData?.user?.isAnonymous) {
   //     redirect('/sign-in');
   // }
