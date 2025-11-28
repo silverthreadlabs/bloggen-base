@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchChat, fetchChats } from './api';
-import { chatKeys } from './query-keys';
+import { chatKeys } from '@/chat/constants/query-keys';
+import { fetchChat, fetchChats } from '@/chat/lib';
 
 /**
  * Fetch all chats for the current user

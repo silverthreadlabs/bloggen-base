@@ -10,5 +10,14 @@ export * from './functions/toggle-pin-chat';
 export * from './functions/update-chat-title';
 export * from './functions/update-message';
 
-// Re-export all hooks
-export * from './hooks';
+// Re-export all hooks, avoiding conflicts with function exports
+export {
+  useCreateChat,
+  useDeleteChat,
+  useDeleteMessage,
+  useSaveMessage,
+  useTogglePinChat,
+  useUpdateChatTitle,
+  useUpdateMessage,
+  // add any other non-conflicting exports from './hooks' here
+} from './hooks';

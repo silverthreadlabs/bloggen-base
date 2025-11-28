@@ -4,8 +4,8 @@ import { useChat } from '@ai-sdk/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
-import { deleteTrailingMessages } from '@/lib/actions/chat-actions';
+import type { PromptInputMessage } from '@/chat/components/ai-elements/prompt-input';
+import { deleteTrailingMessages } from '@/chat/lib/actions/chat-actions';
 import { useSession } from '@/lib/auth/auth-client';
 import {
   getLengthModifierWithMarkers,
@@ -16,22 +16,18 @@ import {
   TONE_MARKER_START,
 } from '@/lib/config/message-modifiers';
 import {
-  useChatOperations,
+  type ChatWithMessages,
   useChat as useChatQuery,
   useChats,
-  useMessageOperations,
   useUpdateChatTitleInCache,
-} from '@/lib/hooks/chat';
-import { chatKeys } from '@/lib/hooks/chat/query-keys';
-import {
-  useChatPinStatus,
-  useToggleChatPin,
-} from '@/lib/hooks/chat/use-chat-pin';
+} from '@/chat/lib/hooks';
+import { useChatPinStatus, useToggleChatPin } from '@/chat/lib/hooks';
 import { useFileUploads } from '@/lib/hooks/use-file-uploads';
 import { useMessageModifiers } from '@/lib/hooks/use-url-state';
-import type { ChatWithMessages } from '@/lib/types/chat';
 import { generateUUID } from '@/lib/utils';
 import { ChatView } from './ui/chat-view';
+import { useChatOperations, useMessageOperations } from '@/chat/hooks';
+import { chatKeys } from '../constants/query-keys';
 
 type Props = {
   chatId: string;

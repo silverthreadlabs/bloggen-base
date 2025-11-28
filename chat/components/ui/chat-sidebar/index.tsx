@@ -10,8 +10,8 @@ import {
     useCreateChat,
     useDeleteChat,
     useUpdateChatTitle,
-} from '@/lib/hooks/chat';
-import { useToggleChatPin } from '@/lib/hooks/chat/use-chat-pin';
+} from '@/chat/lib/hooks';
+import { useToggleChatPin } from '@/chat/lib/hooks';
 import { cn } from '@/lib/utils';
 
 import { ChatSidebarHeader } from './sidebar-header';

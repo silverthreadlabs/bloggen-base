@@ -5,9 +5,9 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '@/components/ai-elements/conversation';
-import { Loader } from '@/components/ai-elements/loader';
-import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
+} from '@/chat/components/ai-elements/conversation';
+import { Loader } from '@/chat/components/ai-elements/loader';
+import type { PromptInputMessage } from '@/chat/components/ai-elements/prompt-input';
 import type { LengthOption, ToneOption } from '@/lib/config/message-modifiers';
 import type { useFileUploads } from '@/lib/hooks/use-file-uploads';
 

@@ -1,3 +1,5 @@
+'use client'
+
 import { MoreVertical, Pin, Share2, SquarePen, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';

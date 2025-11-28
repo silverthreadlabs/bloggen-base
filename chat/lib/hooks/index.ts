@@ -4,24 +4,24 @@ export type {
   Chat,
   ChatWithMessages,
   CreateMessagePayload,
-} from '@/lib/types/chat';
-export {
-  createChat,
-  deleteChat,
-  deleteMessage,
-  fetchChat,
-  fetchChats,
-  saveMessage,
-  updateChatTitle,
-  updateMessage,
-} from './api';
-export {
-  useChatActions,
-  useChatOperations,
-  useChatSync,
-  useMessageOperations,
-} from './component-hooks';
-export { chatKeys } from './query-keys';
+} from '@/chat/types';
+// export {
+//   createChat,
+//   deleteChat,
+//   deleteMessage,
+//   fetchChat,
+//   fetchChats,
+//   saveMessage,
+//   updateChatTitle,
+//   updateMessage,
+// } from '../functions';
+// export {
+//   useChatActions,
+//   useChatOperations,
+//   useChatSync,
+//   useMessageOperations,
+// } from './component-hooks';
+// export { chatKeys } from './query-keys';
 export {
   useCreateChat,
   useDeleteChat,

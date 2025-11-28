@@ -5,7 +5,7 @@ import {
   useCreateChat,
   useDeleteChat,
   useUpdateChatTitle,
-} from '@/lib/hooks/chat';
+} from '@/chat/lib/hooks';
 
 export function useChatOperations(chatId: string) {
   const createChatMutation = useCreateChat();

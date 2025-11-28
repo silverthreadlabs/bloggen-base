@@ -4,6 +4,7 @@
 
 export { ChatContainer } from './chat-container';
 export { ChatInterface } from './chat-interface';
+export { ChatLayoutClient } from './chat-layout-client';
 export {
   ChatHeader,
   ChatInput,
@@ -20,7 +21,7 @@ export { LengthSelector, ToneSelector } from './selectors';
 // TYPE EXPORTS
 // ============================================================================
 
-export type { ChatStatus, HardcodedMessageType, UIMessage } from '@/lib/types/chat';
+export type { ChatStatus, HardcodedMessageType, UIMessage } from '@/chat/types';
 
 // ============================================================================
 // DATA EXPORTS
@@ -32,7 +33,7 @@ export { hardcodedMessages, mockResponses, suggestions } from '../utils/chat-dat
 // HOOK EXPORTS
 // ============================================================================
 
-export { useChatActions } from '@/lib/hooks/chat';
+export { useChatActions } from '@/chat/hooks';
 
 // ============================================================================
 // UTILITY EXPORTS

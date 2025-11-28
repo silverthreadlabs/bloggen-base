@@ -7,8 +7,8 @@ import {
   useRegenerateMessage,
   useSaveMessage,
   useUpdateMessage,
-} from '@/lib/hooks/chat';
-import { chatKeys } from '@/lib/hooks/chat/query-keys';
+} from '@/chat/lib/hooks';
+import { chatKeys } from '../constants/query-keys';
 
 export function useMessageOperations(chatId: string) {
   const queryClient = useQueryClient();

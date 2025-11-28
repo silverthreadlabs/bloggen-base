@@ -2,7 +2,7 @@
 
 import type { UIMessage } from '@ai-sdk/react';
 import { useEffect, useRef } from 'react';
-import { useSaveMessage } from '@/lib/hooks/chat';
+import { useSaveMessage } from '@/chat/lib/hooks';
 
 type Props = {
   chatId: string;

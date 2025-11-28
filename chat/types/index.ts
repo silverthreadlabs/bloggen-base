@@ -1,1 +1,2 @@
-export * from './some-common-type';
+export * from './chat';
+export * from './files';

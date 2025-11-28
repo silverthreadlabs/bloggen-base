@@ -4,7 +4,7 @@ import { FileIcon, ImageIcon, X, Upload } from 'lucide-react';
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import type { File as DBFile } from '@/lib/db/schema';
-import { PromptInputActionMenuItem } from '@/components/ai-elements/prompt-input';
+import { PromptInputActionMenuItem } from '@/chat/components/ai-elements/prompt-input';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { isMimeTypeAllowed, getAllowedExtensions } from '@/lib/utils/file-types';

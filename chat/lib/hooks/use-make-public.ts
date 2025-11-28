@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { makeChatPublic } from './api';
-import { chatKeys } from './query-keys';
+import { makeChatPublic } from '@/chat/lib';
+import { chatKeys } from '@/chat/constants/query-keys';
 
 export function useMakeChatPublic(chatId: string) {
   const queryClient = useQueryClient();

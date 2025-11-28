@@ -1,10 +1,9 @@
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
-import { ChatLayoutClient } from '@/components/chat/chat-layout-client';
+import { ChatComponents } from '@/chat';
 import { auth } from '@/lib/auth/auth';
 import type { BetterAuthSession } from '@/lib/auth/auth-types';
 import '../../global.css';
-import {Chat, ChatComponents} from "../../../chat";
 export default async function ChatLayout({
   children,
 }: {
@@ -23,5 +22,5 @@ export default async function ChatLayout({
   //     redirect('/sign-in');
   // }
 
-  return <ChatLayoutClient>{children}</ChatLayoutClient>;
+  return <ChatComponents.ChatLayoutClient>{children}</ChatComponents.ChatLayoutClient>;
 }

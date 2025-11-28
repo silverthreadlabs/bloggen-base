@@ -3,8 +3,7 @@
 import { useParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-// import { ChatSidebar } from './ui/chat-sidebar/index';
-import { ChatComponents } from '..';
+import { ChatComponents } from '@/chat';
 
 export function ChatLayoutClient({ children }: { children: ReactNode }) {
   const params = useParams();

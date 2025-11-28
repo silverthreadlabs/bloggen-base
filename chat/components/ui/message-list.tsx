@@ -3,15 +3,15 @@
 import type { UIMessage } from '@ai-sdk/react';
 import { CheckIcon, CopyIcon, PencilIcon, RefreshCwIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Action, Actions } from '@/components/ai-elements/actions';
-import { Message, MessageContent } from '@/components/ai-elements/message';
-import { Response } from '@/components/ai-elements/response';
-import { useChatActions } from '@/lib/hooks/chat';
+import { Action, Actions } from '@/chat/components/ai-elements/actions';
+import { Message, MessageContent } from '@/chat/components/ai-elements/message';
+import { Response } from '@/chat/components/ai-elements/response';
 import { MessageAvatar } from './message-avatar';
 import { isLastAssistantMessage } from '../../utils/message-utils';
 import { FileAttachmentsGrid } from './file-attachment-display';
 import { cn } from '@/lib/utils';
 import type { FileUIPart } from 'ai';
+import { useChatActions } from '@/chat/components';
 
 type Props = {
   messages: UIMessage[];

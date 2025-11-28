@@ -2,9 +2,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import type { ChatWithMessages, CreateMessagePayload } from '@/lib/types/chat';
-import { deleteMessage, saveMessage, updateMessage } from './api';
-import { chatKeys } from './query-keys';
+import { deleteMessage, saveMessage, updateMessage } from '@/chat/lib';
+import { chatKeys } from '@/chat/constants/query-keys';
+import { ChatWithMessages, CreateMessagePayload } from '@/chat/types';
 
 /**
  * Save a new message to a chat
@@ -175,3 +175,4 @@ export function useRegenerateMessage() {
     // Don't invalidate here - let onFinish handle it after streaming completes
   });
 }
+
