@@ -3,7 +3,7 @@ import {
   getAuthenticatedUserFromRequest,
   handleApiError,
   validateRequired,
-} from '@/lib/api/utils';
+} from '@/chat/lib/api/utils';
 import { createChat, getChatsByUserId } from '@/lib/db/chat-queries';
 
 // GET /api/chats - Get all chats for user

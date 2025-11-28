@@ -2,7 +2,7 @@ import {
   getAuthenticatedUserFromRequest,
   handleApiError,
   verifyChatOwnership,
-} from '@/lib/api/utils';
+} from '@/chat/lib/api/utils';
 import { deleteMessagesAfter } from '@/lib/db/chat-queries';
 
 /**

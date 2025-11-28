@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import {
   getAuthenticatedUserFromRequest,
   handleApiError,
-} from '@/lib/api/utils';
+} from '@/chat/lib/api/utils';
 import { getSystemPrompt } from '@/lib/config/prompts';
 import {
   createChat,

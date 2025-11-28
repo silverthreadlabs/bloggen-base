@@ -5,7 +5,7 @@ import {
   parseRouteParams,
   validateRequired,
   verifyChatOwnership,
-} from '@/lib/api/utils';
+} from '@/chat/lib/api/utils';
 import {
   dbMessagesToUIMessages,
   deleteChat,
