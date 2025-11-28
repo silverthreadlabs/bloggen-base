@@ -5,7 +5,7 @@
 
 import { auth } from '@/lib/auth/auth';
 import { getChatById } from '@/lib/db/chat-queries';
-import { ChatSDKError } from '@/lib/errors';
+import { ChatSDKError } from '@/chat/utils/errors';
 
 /**
  * Get authenticated user from request

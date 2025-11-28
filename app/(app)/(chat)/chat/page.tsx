@@ -1,5 +1,5 @@
 import { ChatComponents } from '@/chat';
-import { generateUUID } from '@/lib/utils';
+import { generateUUID } from '@/chat/utils';
 
 export default async function ChatPage() {
     // Generate chatId on server - Vercel pattern for seamless new chat

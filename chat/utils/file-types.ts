@@ -1,9 +1,11 @@
 /**
- * File Type Utilities
- * Helper functions for working with allowed file types
+ * FILE TYPE CONFIGURATION
+ * Single source of truth for all allowed file types and their extensions.
+ * To add a new file type, simply add an entry to this array.
  */
 
-import { ALLOWED_FILE_TYPES } from '@/lib/constants';
+
+import { ALLOWED_FILE_TYPES } from '@/chat/constants';
 
 /**
  * Get all allowed MIME types

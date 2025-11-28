@@ -8,7 +8,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { formatISO } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema';
-import { ChatSDKError, type ErrorCode } from './errors';
+import { ChatSDKError, type ErrorCode } from '../chat/utils/errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 
 export function cn(...inputs: ClassValue[]) {

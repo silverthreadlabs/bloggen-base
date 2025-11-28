@@ -8,7 +8,7 @@ import {
   getMessage,
   togglePinChat as togglePinChatQuery,
 } from '@/lib/db/chat-queries';
-import { ChatSDKError } from '@/lib/errors';
+import { ChatSDKError } from '@/chat/utils/errors';
 
 /**
  * Server action to delete a message and all messages after it

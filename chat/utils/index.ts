@@ -7,3 +7,4 @@ export * from './file-processing';
 export * as FileTypes from './file-types';
 export * from './file-upload';
 export { validateFile as validateFileFromValidation } from './file-validation';
+export * from './chat-generate-uuid';
