@@ -1,1 +1,1 @@
-export * from './some-util';
+export * from './message-utils';

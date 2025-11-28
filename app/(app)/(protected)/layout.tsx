@@ -1,6 +1,7 @@
 import Banner from '@/components/layout/banner/banner';
 import Footer from '@/components/layout/footer/footer';
 import Header from '@/components/layout/header/header';
+import {Chat} from '@/chat/';
 
 import '../../global.css';
 import { headers } from 'next/headers';
@@ -19,6 +20,7 @@ export default async function MainLayout({
   return (
     <>
       <Banner />
+      
       <Header session={session as unknown as Session} />
       {children}
       <Footer />

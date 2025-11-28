@@ -1,5 +1,5 @@
 // Import with proper typing
-import * as api from "./api";
+import * as api from "./lib";
 import * as utils from "./utils";
 import * as types from "./types";
 import * as constants from "./constants";
