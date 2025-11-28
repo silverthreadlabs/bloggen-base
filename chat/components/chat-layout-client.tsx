@@ -3,7 +3,8 @@
 import { useParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { ChatSidebar } from './ui/chat-sidebar/index';
+// import { ChatSidebar } from './ui/chat-sidebar/index';
+import { ChatComponents } from '..';
 
 export function ChatLayoutClient({ children }: { children: ReactNode }) {
   const params = useParams();
@@ -11,7 +12,8 @@ export function ChatLayoutClient({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <ChatSidebar currentChatId={chatId} />
+      {/* <ChatSidebar currentChatId={chatId} /> */}
+      <ChatComponents.ChatSidebar currentChatId={chatId} />
       <SidebarInset className="flex flex-col h-screen overflow-hidden w-full">
         <div className="flex flex-1 flex-col overflow-hidden w-full">
           <div className="h-full w-full mx-auto">{children}</div>

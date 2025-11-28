@@ -1,7 +1,8 @@
 'use client';
 
 import { useChat } from '@/lib/hooks/chat';
-import { ChatInterface } from './chat-interface';
+// import { ChatInterface } from './chat-interface';
+import { Chat, ChatComponents } from '..';
 
 type Props = {
   chatId: string; // Now required - always generated server-side
@@ -19,7 +20,7 @@ export function ChatContainer({ chatId, isNewChat = false }: Props) {
   // For new chats, render immediately without loading state
   if (isNewChat) {
     return (
-      <ChatInterface
+      <ChatComponents.ChatInterface
         key={chatId}
         chatId={chatId}
         initialChat={undefined}
@@ -32,7 +33,7 @@ export function ChatContainer({ chatId, isNewChat = false }: Props) {
   if (isLoading && !isError) {
     // Return disabled chat interface while loading
     return (
-      <ChatInterface
+      <ChatComponents.ChatInterface
         key={`loading-${chatId}`}
         chatId={chatId}
         initialChat={undefined}
@@ -42,7 +43,7 @@ export function ChatContainer({ chatId, isNewChat = false }: Props) {
   }
 
   return (
-    <ChatInterface
+    <ChatComponents.ChatInterface
       key={chatId}
       chatId={chatId}
       initialChat={existingChat}

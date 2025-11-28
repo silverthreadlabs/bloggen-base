@@ -26,7 +26,7 @@ export type { ChatStatus, HardcodedMessageType, UIMessage } from '@/lib/types/ch
 // DATA EXPORTS
 // ============================================================================
 
-export { hardcodedMessages, mockResponses, suggestions } from './chat-data';
+export { hardcodedMessages, mockResponses, suggestions } from '../utils/chat-data';
 
 // ============================================================================
 // HOOK EXPORTS
